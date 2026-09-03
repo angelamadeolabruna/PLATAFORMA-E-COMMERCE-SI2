@@ -113,8 +113,8 @@ _Etapas del PUDS aplicadas al proyecto. Se irán marcando según se avance._
 ### Documentación
 - [ ] 1. Perfil (Introducción, Objetivo General y Específicos, Descripción del problema, Alcance)
   - [x] 1.1 Introducción
-  - [ ] 1.2 Objetivo General
-  - [ ] 1.3 Objetivos Específicos
+  - [x] 1.2 Objetivo General
+  - [x] 1.3 Objetivos Específicos
   - [x] 1.4 Descripción del problema
   - [x] 1.5 Alcance
 - [ ] 2. Fundamentación Teórica (E-commerce, Pasarelas de pago, Deliverys, PUDS, UML)
@@ -131,7 +131,7 @@ _Etapas del PUDS aplicadas al proyecto. Se irán marcando según se avance._
   - [x] 4.1 Especificación de Requerimientos Funcionales (RF)
   - [x] 4.2 Especificación de Requerimientos No Funcionales (RNF)
   - [x] 4.3 Actores del Sistema
-  - [ ] 4.4 Casos de Uso
+  - [x] 4.4 Casos de Uso (lista de 46 CU en 8 grupos, trazados a RF01–RF25)
   - [ ] 4.5 Diagramas de Casos de Uso
 - [ ] 5. Análisis y Diseño
   - [ ] 5.1 Diagramas de Clases
@@ -174,6 +174,17 @@ _Etapas del PUDS aplicadas al proyecto. Se irán marcando según se avance._
 - **1.5 Alcance — Aplicación Móvil** agregada: acceso remoto, vestidor virtual RA, monitoreo en tienda, alertas y notificaciones, y panel de reportes móvil.
 - **Requerimientos**: se redactaron los apartados Actores principales (7 actores), Requisitos funcionales (RF01–RF25), Requisitos no funcionales (RNF01–RNF09) y la **Matriz de trazabilidad RF ↔ Módulos** verificando que los 25 RF están cubiertos por los 15 módulos + App Móvil (ninguno falta). → `DOCUMENTACION/2 Analisis de Requerimientos.md`.
 - **Fundamentación Teórica a) E-commerce** redactada: conceptos generales, características, tipos y proceso de compra; experiencia como usuario (Amazon, Alibaba, Shopify); experiencia como desarrollador (Magento, PrestaShop, WooCommerce) + justificación de plataforma propia (prohibición de frameworks e-commerce) y bibliografía. → `DOCUMENTACION/Parte I - Fundamentacion Teorica - E-commerce.md`.
+- **Flujos de trabajo PUDS – Requisitos 2.1 Identificación de Actores**: 7 actores adaptados (4 internos: Administrador, Encargado de Sucursal, Cajero, Cliente; 3 externos: Proveedor, Sistema de Pagos, Servicio de IA), con Rol Sistémico e Impacto en Vida Real. → `DOCUMENTACION/2.1 Actores del Sistema.md`.
+- **Documentación consolidada** en un solo archivo → `DOCUMENTACION/DOCUMENTACION COMPLETA.md` (incluye Perfil 1.1/1.4/1.5, Análisis de Requerimientos, Actores PUDS y Fundamentación E-commerce; secciones pendientes listadas al final).
+- **Actores del Sistema refinado** con estilo técnico (referencias a tablas del modelo de datos: `productos`, `inventario_stock`, `reservas`, `ventas`, `transacciones_pago`, `recomendaciones_ia`, etc.) para los 7 actores → `DOCUMENTACION/2.1 Actores del Sistema.md`.
+- **Perfil 1.2 Objetivo General y 1.3 Objetivos Específicos** redactados (10 objetivos específicos trazables a los RF) y adaptados a Tiendas Montaño (entregados en el chat para copiar a Word). → `DOCUMENTACION/1.2 y 1.3 Objetivos.md`.
+- **Flujos PUDS – 2.2 Lista de Casos de Uso**: 46 casos de uso en 8 grupos (Acceso/registro, Usuarios-RBAC, Catálogo/sucursales, Proveedores, Inventario, Reservas/vestidor RA, Venta/pago/devoluciones, IA y reporting) con prioridades, trazados a RF01–RF25 y a los módulos del Alcance. → `DOCUMENTACION/2.2 Casos de Uso.md`.
+- **Detalle de Casos de Uso — Ciclo 1 v2** (CU01–CU27): reescritos con especificación técnica completa: endpoints exactos (/api/v1/...), queries SQL, tablas y columnas específicas del modelo, mensajes de error exactos al usuario, cruces con otros CU, comportamiento visual (badges, colores, toast), estados de tablas (old_data/new_data), y precondiciones con referencias a tablas y permisos. → `DOCUMENTACION/Detalle CU Ciclo 1 v2.md`.
+
+### Martes 1 de Septiembre de 2026 (continuación)
+- El usuario detectó **inconsistencia de detalle** en el v2: CU01 muy rico, pero CU09/CU10/CU18–CU27 más esquemáticos. Pidió "intensificar a partir del CU07"; se mantuvo v2 intacto y se creó un archivo nuevo.
+- **Detalle de Casos de Uso — Ciclo 1 v3** (CU07–CU27) creado: reescritos todos al **estándar CU01** (máxima calidad técnica unificada). Cada CU con: PROPÓSITO, DESCRIPCIÓN (endpoints `/api/v1/` exactos, SQL queries, tablas/columnas del modelo, mensajes exactos, componentes UI Angular/Flutter con nombre, RBAC explícito, prevención de enumeración, bcrypt rounds=12, JWT 8h/7d, toasts, badges, old_data/new_data en bitácora), ACTORES, ACTOR INICIADOR, PRECONDICIÓN, FLUJO PRINCIPAL, POST CONDICIÓN, EXCEPCIONES, CASOS DE USO RELACIONADOS. → `DOCUMENTACION/Detalle CU Ciclo 1 v3.md` (verificado: CU07–CU27, 21 CU sin faltantes/duplicados).
+- **Entrega en chat**: el usuario confirmó el **formato correcto para Word** (tabla de 2 columnas, filas `ETIQUETA⇥valor` con TAB real, **cada valor en una sola línea/celda** — sin romper en varias líneas). Se entregaron los **CU07–CU27 v3** completos en ese formato para copiar a Word. Lección clave: no acortar el contenido, pero mantener cada campo en una sola línea. El usuario aclaró que su tabla omite/usa 9 filas (el ejemplo que pegó bien no incluía "CASOS DE USO RELACIONADOS").
 
 ---
 
@@ -201,3 +212,9 @@ _Etapas del PUDS aplicadas al proyecto. Se irán marcando según se avance._
 | 29/08/2026 | Agregado del apartado Aplicación Móvil al Alcance de Tiendas Montaño |
 | 29/08/2026 | Requerimientos: Actores, RF01–RF25, RNF01–RNF09 y matriz de trazabilidad RF ↔ Módulos |
 | 29/08/2026 | Fundamentación Teórica a) E-commerce (conceptos, Amazon/Alibaba/Shopify, Magento/PrestaShop/WooCommerce) |
+| 29/08/2026 | Flujos PUDS: 2.1 Identificación de Actores del Sistema (7 actores: 4 internos, 3 externos) |
+| 29/08/2026 | Consolidación de toda la documentación en `DOCUMENTACION COMPLETA.md` |
+| 01/09/2026 | Perfil 1.2 Objetivo General y 1.3 Objetivos Específicos (10 OE trazables a RF) |
+| 01/09/2026 | Flujos PUDS: 2.2 Lista de Casos de Uso (46 CU en 8 grupos con prioridades) |
+| 01/09/2026 | Detalle de CU Ciclo 1 (CU01–CU27) con flujos principales y excepciones |
+| 01/09/2026 | Detalle de CU Ciclo 1 **v3** (CU07–CU27) intensificado al estándar CU01 → `Detalle CU Ciclo 1 v3.md` |
