@@ -1,0 +1,22 @@
+# Dependencias
+node_modules/
+
+# Entorno / secretos (nunca subir credenciales)
+**/.env
+
+# Builds
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporales de Office / Access / sistemas
+~$*
+*.ldb
+*.laccdb
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
