@@ -393,6 +393,273 @@ export interface RecalcularScoreResultado {
   score: number;
 }
 
+// CU21 - Órdenes de compra
+export interface OrdenCompraItem {
+  id_orden_compra: number;
+  numero: string | null;
+  id_proveedor: number | null;
+  nombre_proveedor: string | null;
+  id_sucursal: number | null;
+  nombre_sucursal: string | null;
+  fecha_orden: string;
+  fecha_estimada_entrega: string | null;
+  fecha_recepcion: string | null;
+  estado: string;
+  total: number;
+  nro_items: number;
+}
+
+export interface LineaOrdenDetalle {
+  id_orden_item: number;
+  id_ptc: number;
+  nombre_producto: string;
+  talla: string;
+  color: string;
+  cantidad: number;
+  precio_unitario: number;
+  subtotal: number;
+}
+
+export interface DetalleOrdenCompra extends OrdenCompraItem {
+  observaciones: string | null;
+  detalle: LineaOrdenDetalle[];
+}
+
+export interface OpcionProveedorOrden {
+  id_proveedor: number;
+  nombre: string;
+  estado: string;
+  calidad_score: number | null;
+}
+
+export interface OpcionProductoOrden {
+  id_ptc: number;
+  id_producto: number;
+  nombre_producto: string;
+  talla: string;
+  color: string;
+  precio_base: number;
+}
+
+export interface OpcionesOrdenCompra {
+  proveedores: OpcionProveedorOrden[];
+  sucursales: Array<{ id_sucursal: number; nombre: string }>;
+  productos: OpcionProductoOrden[];
+}
+
+export interface LineaDetallePayload {
+  id_ptc: number;
+  cantidad: number;
+  precio_unitario_compra: number;
+}
+
+export interface CrearOrdenCompraPayload {
+  id_proveedor: number;
+  id_sucursal: number;
+  fecha_estimada_entrega: string;
+  detalle: LineaDetallePayload[];
+  observaciones?: string;
+}
+
+export interface CrearOrdenCompraResultado {
+  detail: string;
+  id_orden_compra: number;
+  total: number;
+}
+
+// CU23 - Kardex dinámico
+export interface KardexMovimiento {
+  id_movimiento: number;
+  fecha: string;
+  tipo_movimiento: string;
+  cantidad: number;
+  stock_anterior: number;
+  saldo: number;
+  referencia: string | null;
+  referencia_id: number | null;
+  descripcion: string;
+  id_usuario: number | null;
+}
+
+export interface RespuestaKardex {
+  total: number;
+  pagina: number;
+  limite: number;
+  id_ptc: number;
+  id_sucursal: number;
+  saldo_actual: { disponible: number; reservada: number; vendida: number };
+  movimientos: KardexMovimiento[];
+}
+
+export interface OpcionProductoKardex {
+  id_ptc: number;
+  id_producto: number;
+  nombre_producto: string;
+  talla: string;
+  color: string;
+}
+
+export interface OpcionesKardex {
+  sucursales: Array<{ id_sucursal: number; nombre: string }>;
+  productos: OpcionProductoKardex[];
+}
+
+export interface FiltroKardex {
+  id_ptc?: number;
+  id_sucursal?: number;
+  fecha_desde?: string;
+  fecha_hasta?: string;
+  pagina?: number;
+  limite?: number;
+}
+
+// CU24 - Ajustes y mermas
+export interface RegistrarAjustePayload {
+  id_ptc: number;
+  id_sucursal?: number;
+  tipo: 'AJUSTE' | 'MERMA';
+  cantidad: number;
+  motivo: string;
+  observacion?: string;
+}
+
+export interface RespuestaAjuste {
+  detail: string;
+  nuevo_stock: number;
+}
+
+export interface AjusteHistorialItem {
+  id_movimiento: number;
+  fecha: string;
+  id_ptc: number;
+  nombre_producto: string;
+  talla: string;
+  color: string;
+  tipo_movimiento: string;
+  cantidad: number;
+  saldo: number;
+  motivo: string;
+  referencia: string | null;
+}
+
+export interface RespuestaAjustes {
+  total: number;
+  pagina: number;
+  limite: number;
+  items: AjusteHistorialItem[];
+}
+
+// CU25 - Alertas de stock mínimo
+export interface AlertaStockItem {
+  id_stock: number;
+  id_ptc: number;
+  id_sucursal: number;
+  nombre_sucursal: string;
+  nombre_producto: string;
+  talla: string;
+  color: string;
+  cantidad_disponible: number;
+  stock_minimo_alert: number;
+}
+
+export interface RespuestaAlertas {
+  total: number;
+  sucursal: number | null;
+  items: AlertaStockItem[];
+}
+
+export interface ConfigurarStockMinimoItem {
+  id_ptc: number;
+  id_sucursal?: number;
+  stock_minimo: number;
+}
+
+export interface RespuestaConfigurarStockMinimo {
+  detail: string;
+  actualizados: number;
+}
+
+// CU26 - Existencias consolidadas
+export interface ExistenciaPorSucursal {
+  id_sucursal: number;
+  nombre_sucursal: string;
+  disponible: number;
+  reservada: number;
+  vendida: number;
+  stock_minimo_alert: number;
+}
+
+export interface ExistenciaItem {
+  id_ptc: number;
+  id_producto: number;
+  nombre_producto: string;
+  talla: string;
+  color: string;
+  categoria: string | null;
+  total_disponible: number;
+  total_reservado: number;
+  total_vendido: number;
+  stock_minimo_global: number;
+  stock_bajo: boolean;
+  sucursales: ExistenciaPorSucursal[];
+}
+
+export interface RespuestaExistencias {
+  total: number;
+  pagina: number;
+  limite: number;
+  busqueda: string | null;
+  id_categoria: number | null;
+  id_sucursal: number | null;
+  items: ExistenciaItem[];
+}
+
+export interface FiltroExistencias {
+  busqueda?: string;
+  categoria?: number;
+  id_sucursal?: number;
+  pagina?: number;
+  limite?: number;
+}
+
+export interface OpcionesExistencias {
+  sucursales: Array<{ id_sucursal: number; nombre: string }>;
+  categorias: Array<{ id_categoria: number; nombre: string }>;
+}
+
+// CU27 - Respaldos de información
+export interface RespaldoItem {
+  id_respaldo: number;
+  fecha: string;
+  tipo: string;
+  tamano_bytes: number | null;
+  estado: string;
+  storage_url: string | null;
+  creado_por: number | null;
+  creado_por_nombre: string | null;
+}
+
+export interface RespuestaRespaldos {
+  total: number;
+  items: RespaldoItem[];
+}
+
+export interface ProgramacionRespaldo {
+  id_programacion: number;
+  frecuencia: string;
+  hora: string;
+  dia_semana: number | null;
+  activo: boolean;
+  ultima_ejecucion: string | null;
+}
+
+export interface GuardarProgramacionPayload {
+  frecuencia: 'Diario' | 'Semanal';
+  hora: string;
+  dia_semana?: number | null;
+  activo?: boolean;
+}
+
 export class ApiError extends Error {
   status: number;
 
@@ -931,5 +1198,162 @@ export const api = {
       method: 'POST',
     });
     return handleResponse<RecalcularScoreResultado>(res);
+  },
+
+  // CU21 - Órdenes de compra
+  async listarOrdenesCompra(): Promise<OrdenCompraItem[]> {
+    const res = await solicitar(`${this.baseUrl}/admin/ordenes-compra`);
+    return handleResponse<OrdenCompraItem[]>(res);
+  },
+
+  async obtenerOrdenCompra(id: number): Promise<DetalleOrdenCompra> {
+    const res = await solicitar(`${this.baseUrl}/admin/ordenes-compra/${id}`);
+    return handleResponse<DetalleOrdenCompra>(res);
+  },
+
+  async obtenerOpcionesOrdenCompra(): Promise<OpcionesOrdenCompra> {
+    const res = await solicitar(`${this.baseUrl}/admin/ordenes-compra/opciones`);
+    return handleResponse<OpcionesOrdenCompra>(res);
+  },
+
+  async crearOrdenCompra(payload: CrearOrdenCompraPayload): Promise<CrearOrdenCompraResultado> {
+    const res = await solicitar(`${this.baseUrl}/admin/ordenes-compra`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<CrearOrdenCompraResultado>(res);
+  },
+
+  async actualizarOrdenCompra(id: number, payload: CrearOrdenCompraPayload): Promise<CrearOrdenCompraResultado> {
+    const res = await solicitar(`${this.baseUrl}/admin/ordenes-compra/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<CrearOrdenCompraResultado>(res);
+  },
+
+  async anularOrdenCompra(id: number): Promise<{ detail: string }> {
+    const res = await solicitar(`${this.baseUrl}/admin/ordenes-compra/${id}/anular`, {
+      method: 'PATCH',
+    });
+    return handleResponse<{ detail: string }>(res);
+  },
+
+  // CU23 - Kardex dinámico
+  async obtenerOpcionesKardex(): Promise<OpcionesKardex> {
+    const res = await solicitar(`${this.baseUrl}/admin/inventario/kardex/opciones`);
+    return handleResponse<OpcionesKardex>(res);
+  },
+
+  async consultarKardex(filtro: FiltroKardex): Promise<RespuestaKardex> {
+    const params = new URLSearchParams();
+    if (filtro.id_ptc != null) params.set('id_ptc', String(filtro.id_ptc));
+    if (filtro.id_sucursal != null) params.set('id_sucursal', String(filtro.id_sucursal));
+    if (filtro.fecha_desde) params.set('fecha_desde', filtro.fecha_desde);
+    if (filtro.fecha_hasta) params.set('fecha_hasta', filtro.fecha_hasta);
+    if (filtro.pagina != null) params.set('pagina', String(filtro.pagina));
+    if (filtro.limite != null) params.set('limite', String(filtro.limite));
+    const qs = params.toString();
+    const res = await solicitar(`${this.baseUrl}/admin/inventario/kardex${qs ? `?${qs}` : ''}`);
+    return handleResponse<RespuestaKardex>(res);
+  },
+
+  // CU24 - Ajustes y mermas
+  async listarAjustes(pagina = 1, limite = 20): Promise<RespuestaAjustes> {
+    const res = await solicitar(`${this.baseUrl}/admin/inventario/ajustes?pagina=${pagina}&limite=${limite}`);
+    return handleResponse<RespuestaAjustes>(res);
+  },
+
+  async registrarAjuste(payload: RegistrarAjustePayload): Promise<RespuestaAjuste> {
+    const res = await solicitar(`${this.baseUrl}/admin/inventario/ajustes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<RespuestaAjuste>(res);
+  },
+
+  // CU25 - Alertas de stock mínimo
+  async obtenerOpcionesAlertas(): Promise<OpcionesKardex> {
+    const res = await solicitar(`${this.baseUrl}/admin/inventario/alertas/opciones`);
+    return handleResponse<OpcionesKardex>(res);
+  },
+
+  async listarAlertas(idSucursal?: number): Promise<RespuestaAlertas> {
+    const params = new URLSearchParams();
+    if (idSucursal != null) params.set('id_sucursal', String(idSucursal));
+    const qs = params.toString();
+    const res = await solicitar(`${this.baseUrl}/admin/inventario/alertas${qs ? `?${qs}` : ''}`);
+    return handleResponse<RespuestaAlertas>(res);
+  },
+
+  async configurarStockMinimo(items: ConfigurarStockMinimoItem[]): Promise<RespuestaConfigurarStockMinimo> {
+    const res = await solicitar(`${this.baseUrl}/admin/inventario/alertas/stock-minimo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    });
+    return handleResponse<RespuestaConfigurarStockMinimo>(res);
+  },
+
+  // CU26 - Existencias consolidadas
+  async obtenerOpcionesExistencias(): Promise<OpcionesExistencias> {
+    const res = await solicitar(`${this.baseUrl}/admin/inventario/existencias/opciones`);
+    return handleResponse<OpcionesExistencias>(res);
+  },
+
+  async consultarExistencias(filtro: FiltroExistencias): Promise<RespuestaExistencias> {
+    const params = new URLSearchParams();
+    if (filtro.busqueda) params.set('busqueda', filtro.busqueda);
+    if (filtro.categoria != null) params.set('categoria', String(filtro.categoria));
+    if (filtro.id_sucursal != null) params.set('id_sucursal', String(filtro.id_sucursal));
+    if (filtro.pagina != null) params.set('pagina', String(filtro.pagina));
+    if (filtro.limite != null) params.set('limite', String(filtro.limite));
+    const qs = params.toString();
+    const res = await solicitar(`${this.baseUrl}/admin/inventario/existencias${qs ? `?${qs}` : ''}`);
+    return handleResponse<RespuestaExistencias>(res);
+  },
+
+  // CU27 - Respaldos de información
+  async listarRespaldos(): Promise<RespuestaRespaldos> {
+    const res = await solicitar(`${this.baseUrl}/admin/respaldos`);
+    return handleResponse<RespuestaRespaldos>(res);
+  },
+
+  async crearRespaldo(): Promise<RespaldoItem> {
+    const res = await solicitar(`${this.baseUrl}/admin/respaldos/crear`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    return handleResponse<RespaldoItem>(res);
+  },
+
+  async descargarRespaldo(id: number): Promise<{ blob: Blob; filename: string }> {
+    const res = await solicitar(`${this.baseUrl}/admin/respaldos/${id}/descargar`);
+    if (!res.ok) {
+      throw new ApiError(res.status, 'No se pudo descargar el respaldo.');
+    }
+    const blob = await res.blob();
+    const disposicion = res.headers.get('Content-Disposition') ?? '';
+    const match = /filename="?([^";]+)"?/.exec(disposicion);
+    const filename = match ? match[1] : `respaldo_${id}.sql.gz`;
+    return { blob, filename };
+  },
+
+  async obtenerProgramacion(): Promise<ProgramacionRespaldo> {
+    const res = await solicitar(`${this.baseUrl}/admin/respaldos/programacion`);
+    return handleResponse<ProgramacionRespaldo>(res);
+  },
+
+  async guardarProgramacion(payload: GuardarProgramacionPayload): Promise<{ detail: string; programacion: ProgramacionRespaldo }> {
+    const res = await solicitar(`${this.baseUrl}/admin/respaldos/programacion`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
   },
 }

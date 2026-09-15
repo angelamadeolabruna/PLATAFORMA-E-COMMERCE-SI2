@@ -6,6 +6,9 @@ import { SeguridadModule } from './modulos/seguridad/seguridad.module.js';
 import { ClientesModule } from './modulos/clientes/clientes.module.js';
 import { CatalogoModule } from './modulos/catalogo/catalogo.module.js';
 import { ProveedoresModule } from './modulos/proveedores/proveedores.module.js';
+import { ComprasModule } from './modulos/compras/compras.module.js';
+import { InventarioModule } from './modulos/inventario/inventario.module.js';
+import { RespaldosModule } from './modulos/respaldos/RespaldosModule.js';
 
 @Module({
   imports: [
@@ -27,6 +30,9 @@ import { ProveedoresModule } from './modulos/proveedores/proveedores.module.js';
     ClientesModule,
     CatalogoModule,
     ProveedoresModule,
+    ComprasModule,
+    InventarioModule,
+    RespaldosModule,
   ],
   controllers: [HealthController],
 })

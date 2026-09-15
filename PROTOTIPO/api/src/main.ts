@@ -25,10 +25,19 @@ async function bootstrap() {
       transform: true,
       transformOptions: { enableImplicitConversion: false },
       exceptionFactory: (errors) => {
-        const mensajes = errors.flatMap((e) =>
-          Object.values(e.constraints ?? {}).map((m) => m),
-        );
-        return new UnprocessableEntityException(mensajes);
+        const mensajes: string[] = [];
+        const extraer = (lista: typeof errors) => {
+          for (const err of lista) {
+            for (const m of Object.values(err.constraints ?? {})) {
+              mensajes.push(m);
+            }
+            if (err.children && err.children.length > 0) {
+              extraer(err.children as typeof errors);
+            }
+          }
+        };
+        extraer(errors);
+        return new UnprocessableEntityException(mensajes.length > 0 ? mensajes : Object.keys(errors[0] ?? {}));
       },
     }),
   );

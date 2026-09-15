@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { LogOut, Menu, Store, X } from 'lucide-react';
 import { cn } from '@/lib/utils.js';
 import { useAuth } from '@/contexts/AuthContext.js';
 import { PAQUETES_ADMIN, type ItemMenuAdmin, type PaqueteMenu } from '@/data/adminMenu.js';
+import { api } from '@/lib/api.js';
 import { Button } from '@/components/ui/Button.js';
 import logoUrl from '@/assets/logo.png';
 
@@ -21,6 +22,29 @@ function SidebarBody({ alNavegar }: { alNavegar: () => void }) {
   const permisos = (usuario?.permisos ?? []) as string[];
   const permitido = (item: ItemMenuAdmin) =>
     permisos.includes('*') || (item.permiso ? permisos.includes(item.permiso) : true);
+
+  const [nAlertas, setNAlertas] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!tokenPuedeAlertas()) return;
+    let activo = true;
+    api
+      .listarAlertas()
+      .then((res) => {
+        if (activo) setNAlertas(res.total);
+      })
+      .catch(() => {
+        if (activo) setNAlertas(null);
+      });
+    return () => {
+      activo = false;
+    };
+  }, [usuario?.permisos]);
+
+  function tokenPuedeAlertas(): boolean {
+    const p = (usuario?.permisos ?? []) as string[];
+    return Boolean(usuario) && (p.includes('*') || p.includes('gestionar_inventario'));
+  }
 
   const paquetesVisibles = PAQUETES_ADMIN.filter((paquete) => paquete.items.some(permitido));
 
@@ -61,8 +85,15 @@ function SidebarBody({ alNavegar }: { alNavegar: () => void }) {
                           <item.icono size={18} className={cn(isActive ? 'text-white/80' : 'text-ink-400 group-hover:text-ink-700')} />
                         </span>
                         <span className="flex-1 leading-tight">{item.etiqueta}</span>
-                        <span className={cn('rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold', isActive ? 'bg-white/15 text-white/90' : item.implementado ? 'bg-success-50 text-success-700' : 'bg-ink-100 text-ink-400')}>
-                          {item.cu}
+                        <span className="flex items-center gap-1.5">
+                          <span className={cn('rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold', isActive ? 'bg-white/15 text-white/90' : item.implementado ? 'bg-success-50 text-success-700' : 'bg-ink-100 text-ink-400')}>
+                            {item.cu}
+                          </span>
+                          {item.ruta === '/admin/inventario/alertas' && nAlertas != null && nAlertas > 0 && (
+                            <span className="rounded-full bg-danger-600 px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none text-white">
+                              {nAlertas}
+                            </span>
+                          )}
                         </span>
                       </>
                     )}

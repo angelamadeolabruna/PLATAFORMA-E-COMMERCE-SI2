@@ -18,6 +18,12 @@ import { AdminCatalogoProductos } from '@/pages/admin/AdminCatalogoProductos.js'
 import { AdminCatalogos } from '@/pages/admin/AdminCatalogos.js';
 import { AdminTemporadas } from '@/pages/admin/AdminTemporadas.js';
 import { AdminProveedores } from '@/pages/admin/AdminProveedores.js';
+import { AdminOrdenesCompra } from '@/pages/admin/AdminOrdenesCompra.js';
+import { AdminKardex } from '@/pages/admin/AdminKardex.js';
+import { AdminAjustes } from '@/pages/admin/AdminAjustes.js';
+import { AdminAlertas } from '@/pages/admin/AdminAlertas.js';
+import { AdminExistencias } from '@/pages/admin/AdminExistencias.js';
+import { AdminRespaldos } from '@/pages/admin/AdminRespaldos.js';
 import { AdminPlaceholder } from '@/pages/admin/AdminPlaceholder.js';
 import { EnConstruccion } from '@/pages/EnConstruccion.js';
 
@@ -51,6 +57,12 @@ export function RouterApp() {
         <Route path="catalogo/listas" element={<AdminCatalogos />} />
         <Route path="temporadas" element={<AdminTemporadas />} />
         <Route path="proveedores" element={<AdminProveedores />} />
+        <Route path="ordenes-compra" element={<AdminOrdenesCompra />} />
+        <Route path="inventario/kardex" element={<AdminKardex />} />
+        <Route path="inventario/ajustes" element={<AdminAjustes />} />
+        <Route path="inventario/alertas" element={<AdminAlertas />} />
+        <Route path="inventario/existencias" element={<AdminExistencias />} />
+        <Route path="inventario/backup" element={<AdminRespaldos />} />
         <Route path="auditoria" element={<Auditoria />} />
         <Route path="*" element={<AdminPlaceholder />} />
       </Route>
