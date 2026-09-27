@@ -1,5 +1,6 @@
 export interface Producto {
   id: number;
+  codigo?: string;
   nombre: string;
   categoria: string;
   precio: number;
@@ -7,6 +8,7 @@ export interface Producto {
   descuento: number | null;
   color: string;
   emoji: string;
+  imagen?: string;
   tallas: string[];
   valoracion: number;
   reseñas: number;
@@ -16,6 +18,22 @@ export interface Producto {
 export const productosDemo: Producto[] = [
   {
     id: 1,
+    codigo: 'TMU-REM-001',
+    nombre: 'Remera Básica Algodón',
+    categoria: 'Remeras',
+    precio: 100.57,
+    precioAntes: 125,
+    descuento: 20,
+    color: 'Negro, Blanco, Gris',
+    emoji: '👕',
+    imagen: '/productos/polera/negra.png',
+    tallas: ['S', 'M', 'L', 'XL'],
+    valoracion: 4.9,
+    reseñas: 184,
+    destacado: true,
+  },
+  {
+    id: 2,
     nombre: 'Camisa Oxford Slim Fit',
     categoria: 'Camisas',
     precio: 249,
@@ -23,13 +41,14 @@ export const productosDemo: Producto[] = [
     descuento: 24,
     color: 'Azul cielo',
     emoji: '👔',
+    imagen: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=600&q=80',
     tallas: ['S', 'M', 'L', 'XL'],
     valoracion: 4.8,
     reseñas: 132,
     destacado: true,
   },
   {
-    id: 2,
+    id: 3,
     nombre: 'Jeans Skinny Tiro Medio',
     categoria: 'Pantalones',
     precio: 289,
@@ -37,13 +56,14 @@ export const productosDemo: Producto[] = [
     descuento: null,
     color: 'Azul índigo',
     emoji: '👖',
+    imagen: 'https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=600&q=80',
     tallas: ['28', '30', '32', '34'],
     valoracion: 4.6,
     reseñas: 98,
     destacado: true,
   },
   {
-    id: 3,
+    id: 4,
     nombre: 'Vestido Verano Floral',
     categoria: 'Vestidos',
     precio: 329,
@@ -51,23 +71,10 @@ export const productosDemo: Producto[] = [
     descuento: 22,
     color: 'Menta',
     emoji: '👗',
+    imagen: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=600&q=80',
     tallas: ['XS', 'S', 'M', 'L'],
     valoracion: 4.9,
     reseñas: 214,
-    destacado: true,
-  },
-  {
-    id: 4,
-    nombre: 'Zapatillas Urban Comfort',
-    categoria: 'Zapatos',
-    precio: 459,
-    precioAntes: 549,
-    descuento: 16,
-    color: 'Blanco',
-    emoji: '👟',
-    tallas: ['38', '39', '40', '41', '42'],
-    valoracion: 4.7,
-    reseñas: 176,
     destacado: true,
   },
   {
@@ -79,6 +86,7 @@ export const productosDemo: Producto[] = [
     descuento: null,
     color: 'Celeste',
     emoji: '🧥',
+    imagen: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=600&q=80',
     tallas: ['S', 'M', 'L', 'XL'],
     valoracion: 4.5,
     reseñas: 87,
@@ -105,6 +113,7 @@ export const productosDemo: Producto[] = [
     descuento: null,
     color: 'Verde oliva',
     emoji: '👕',
+    imagen: '/productos/polera/blanca.png',
     tallas: ['S', 'M', 'L', 'XL'],
     valoracion: 4.3,
     reseñas: 51,

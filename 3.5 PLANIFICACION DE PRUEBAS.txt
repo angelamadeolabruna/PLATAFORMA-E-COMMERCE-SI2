@@ -1,0 +1,414 @@
+3.5 PLANIFICACIÓN DE PRUEBAS
+
+3.5.1 Planificar pruebas
+
+3.5.1.1 Objetivo de las pruebas
+
+El objetivo general de las pruebas es verificar que la plataforma web y móvil de e-commerce de Tiendas Montaño cumple con los requisitos funcionales definidos en los casos de uso, y sobre todo que no pierde dinero ni descuadra el inventario.
+
+Los objetivos específicos son cinco.
+
+Verificar la integridad del stock en cada operación que lo mueve. Es el objetivo más importante porque el stock no se guarda en una sola columna: se reparte entre cantidad_disponible, cantidad_reservada y cantidad_vendida, y además lo modifica un disparador de la base de datos. Cualquier prueba que termine en una venta tiene que comprobar las tres.
+
+Verificar que los cuatro estados de una venta se recorren de uno en uno. La venta nace en Pendiente, pasa a Completada cuando el pago se aprueba, y desde ahí no debe volver atrás ni saltar a otro estado.
+
+Verificar que ninguna ruta devuelve datos que no le pertenecen. Cada ruta protegida tiene que rechazar a un usuario sin sesión, a un usuario sin el permiso, y a un empleado que pide datos de una sucursal que no es la suya.
+
+Verificar que el sistema degrada sin romperse. Los dos servicios externos del proyecto, el de transcripción de voz y el de interpretación de intenciones, no están en el repositorio. Las pruebas tienen que demostrar que el paquete de reportes funciona igual sin ellos.
+
+Verificar la coherencia entre el código y el esquema de la base de datos. Se han detectado dos columnas que el código usa y el esquema no tiene, una tabla con cinco estados que ningún CHECK declara, y tres tablas del esquema que ningún fichero del proyecto usa. Cada una de esas cosas necesita un caso de prueba que la vuelva a comprobar.
+
+Lo que las pruebas NO persiguen es demostrar que el sistema funciona. Persiguen demostrar donde deja de funcionar, porque un sistema al que nunca se le busca el fallo es un sistema al que no se le ha mirado.
+
+
+3.5.1.2 Estrategia de las pruebas
+
+La estrategia es de cuatro niveles, y cada nivel coge lo que el anterior no coge.
+
+Nivel 1, pruebas unitarias. Se ejecutan con Vitest, que ya está configurado en api/vitest.config.ts, sobre los archivos que terminen en .spec.ts. Hoy hay cero. Deben cubrir, como mínimo, las tres funciones puras del motor de recomendación, que son maxDe, norm y motivoPrincipal de SRV_ScoringService, porque son las únicas del proyecto que no tocan la base de datos y por eso se pueden probar sin nada más. Cobertura objetivo de este nivel: 60 por ciento sobre el servicio de recomendación y 40 por ciento sobre los otros tres.
+
+Nivel 2, pruebas de integración. Se ejecutan con Vitest y Supertest, que ya están instalados como dependencias de desarrollo, y arrancan el módulo de NestJS contra una base de datos de pruebas. Hoy hay un solo archivo, api/test/app.e2e-spec.ts con 42 líneas, que es el que genera NestJS por defecto y que no prueba nada. Deben cubrir los dos caminos de cada ruta de escritura: el que devuelve 2xx y el que devuelve 4xx con el mensaje de negocio correcto. Cobertura objetivo: 70 por ciento de las rutas de escritura de los paquetes 7, 8, 9 y 10.
+
+Nivel 3, pruebas funcionales sobre la interfaz. No hay ninguna herramienta instalada en el frontend. Se necesita Playwright o Vitest con la biblioteca de pruebas de React, y hay que instalarlas. Deben cubrir los cinco recorridos que incluyen formulario: la reserva, el checkout, la caja, el vestidor y el reporte por voz. Cada recorrido se prueba en los tres estados de la pantalla: cargando, con datos y con error.
+
+Nivel 4, pruebas de sistema sobre los casos de prueba de la sección 3.5.2. Son las que se entregan y las que se reportan. Cubren los diez paquetes.
+
+El orden de ejecución es de abajo arriba: primero las unitarias porque son las más rápidas, después las de integración, después las funcionales, y al final los casos de prueba.
+
+Sobre la base de datos. Los once archivos e2e_cuNN.js que hay en la raíz del prototipo NO sirven como base de este plan, por cuatro razones concretas. Primero, se conectan a la base de datos de producción de Supabase con la contraseña escrita en el propio archivo, y diez de los once insertan, actualizan y borran datos reales de ventas, inventario_stock, carrito_items y transacciones_pago. Segundo, usan una ruta absoluta a un ejecutable psql.exe de la carpeta personal del desarrollador, así que no funcionan en otra máquina. Tercero, no tienen extensión .spec.ts, de modo que Vitest no los ve y hay que lanzarlos a mano uno por uno. Cuarto, el archivo e2e_cu38.js prueba el CU35, de manera que el nombre no corresponde al caso que dice probar.
+
+La decisión es sustituirlos por pruebas de integración de Vitest contra una base de datos creada con schema.sql y poblada con poblacion_datos.sql, con las credenciales en un archivo .env de pruebas y nunca en el código. El objetivo es que los casos de prueba de la sección 3.5.2 se puedan lanzar con un solo comando y sin tocar datos de producción.
+
+Sobre la cobertura de paquetes. Los doce casos cubren los diez paquetes, salvo el paquete 5, Gestión de Proveedores y Compras, que queda excluido de forma explícita. La tabla proveedores declara once columnas en el esquema y el código usa cuatro que no existen, que son nit_ruc, condiciones_comerciales, score_fecha e id_ciudad. El DTO de alta exige nit_ruc y la pantalla lo tiene, de modo que el CU14 no se puede ejecutar hasta que se añada la columna o se cambie el DTO. Documentar un caso de prueba que falla por un defecto conocido del esquema no aporta nada, y lo que se hará es escribirlo en cuanto el defecto se corrija.
+
+
+3.5.2 Caso de pruebas (implementar pruebas)
+
+Los doce casos usan los datos reales del archivo poblacion_datos.sql. Las cuatro sucursales son 1 Tiendas Montaño - Centro en La Paz, 2 Tiendas Montaño - Las Torres en Santa Cruz, 3 Tiendas Montaño - Recoleta en La Paz y 4 Tiendas Montaño - Norte en Cochabamba. Los cuatro roles del catálogo son 1 Administrador con el asterisco, 2 Gerente, 3 Vendedor y 4 Cliente. Las cuentas internas van de admin@tiendasmontano.bo a caja.lapaz@tiendasmontano.bo, y las de cliente son maria.gonzales@correo.com y juan.quiroga@correo.com.
+
+Caso de Prueba CP-001: Autenticación, asignación de roles y permiso de reportes
+•	Entrada:
+o	Credenciales válidas: admin@tiendasmontano.bo con su contraseña del entorno de pruebas
+o	Credenciales inválidas: admin@tiendasmontano.bo con la contraseña Montano2026
+o	Cuenta sin sesión activa, ningún token enviado
+o	Cuenta de cliente: maria.gonzales@correo.com, que tiene el rol 4 Cliente
+o	Permiso buscado: la cadena consultar_reportes, que existe en la base pero no está en schema.sql
+•	Resultado Esperado:
+o	Con credenciales válidas se devuelve 201 y un access_token, y la respuesta incluye el rol del usuario
+o	Con credenciales inválidas se devuelve 401 y el contador intentos_fallidos de la tabla usuarios sube en uno
+o	Sin token, la ruta reportes/voz devuelve 401
+o	Con el rol 4 Cliente, la ruta reportes/voz devuelve 403 con el mensaje No tienes permisos para generar reportes.
+o	Se comprueba en la tabla roles que ningún rol tiene la cadena consultar_reportes, porque los scripts que la añaden apuntan a los identificadores 2 y 3 con los comentarios Cajero y Encargado, y en el catálogo 2 es Gerente y 3 es Vendedor
+•	Condiciones:
+o	La base de datos está creada con schema.sql y poblada con poblacion_datos.sql
+o	El servidor de la API está levantado en el puerto 3000 y el prefijo global es api/v1
+•	Procedimiento de Prueba:
+o	Enviar POST a api/v1/auth/login con el correo y la contraseña válidos
+o	Repetir la llamada con la contraseña equivocada y contar los intentos fallidos
+o	Intentar POST a api/v1/reportes/voz sin la cabecera Authorization
+o	Entrar con la sesión de maria.gonzales@correo.com y llamar a api/v1/reportes/voz
+o	Consultar la columna permisos_json de los cuatro roles del catálogo
+o	Anotar si el rol que tiene consultar_reportes corresponde al comentario del script que lo puso
+•	Interfaz: Pantalla de inicio de sesión y menú lateral del área interna, opción Reportes por voz
+
+Caso de Prueba CP-002: Ciclo de vida completo de una reserva y acreditación del stock
+•	Entrada:
+o	Cliente: maria.gonzales@correo.com, identificador de cliente 1
+o	Prenda: Polera Cuello V Algodon, código POL-001, variante identificador 1, talla 2, color 2
+o	Sucursal: 1 Tiendas Montaño - Centro
+o	Stock inicial en la tabla inventario_stock para esa variante y esa sucursal: 18 disponibles, 0 reservadas, 6 vendidas
+o	Cantidad reservada: 2 unidades
+o	Fecha de reserva: mañana a las 10:00, hora futura obligatoria
+•	Resultado Esperado:
+o	La reserva se crea con estado Solicitada y con un número de reserva generado
+o	Tras PATCH reservas/id/preparar, el estado pasa a Preparada y la columna id_encargado se llena
+o	Tras PATCH reservas/id/confirmar-recepcion, el estado pasa a En tienda
+o	Tras PATCH reservas/id/finalizar, el estado pasa a Cumplida
+o	El movimiento de inventario se registra con tipo SALIDA-RESERVA
+o	SE VERIFICA EL PUNTO CRÍTICO: la cantidad_disponible de esa variante debe bajar 2 unidades, de 18 a 16, y no 4. El método liberarStockReserva inserta el movimiento con la cantidad en positivo, lo que hace que el disparador sume, y después actualiza a mano la misma columna, lo que la suma otra vez
+o	Si la cantidad_disponible baja 4 en lugar de 2, la prueba se considera FALLIDA y hay que abrir incidencia
+•	Condiciones:
+o	El usuario que prepara y confirma tiene rol 3 Vendedor y está asociado a la sucursal 1
+o	La reserva se crea desde una fecha válida, no en el pasado
+•	Procedimiento de Prueba:
+o	Entrar con la sesión de maria.gonzales@correo.com y crear la reserva por la pantalla de nueva reserva
+o	Leer el estado de la reserva y el número generado
+o	Entrar con la sesión del vendedor y ejecutar los tres parches en orden, uno detrás de otro
+o	Antes de finalizar, apuntar el valor de cantidad_disponible, cantidad_reservada y cantidad_vendida de la variante 1 en la sucursal 1
+o	Finalizar la reserva y volver a leer los tres valores
+o	Comparar la diferencia de cantidad_disponible con las 2 unidades esperadas
+o	Repetir la reserva cinco veces y comprobar que la desviación se acumula de dos en dos
+•	Interfaz: Pantallas Mis reservas, Nueva reserva, Detalle de reserva y el panel administrativo de reservas
+
+Caso de Prueba CP-003: Carrito de usuario autenticado y carrito de invitado
+•	Entrada:
+o	Escenario A, usuario autenticado: maria.gonzales@correo.com
+o	Escenario B, visitante sin sesión: ninguna cabecera Authorization
+o	Prenda 1: Polera Cuello V Algodon, variante 1, 89.00 Bs, 18 disponibles en la sucursal 1
+o	Prenda 2: Jean Slim Tacto Denim, variante 21, 289.00 Bs, 14 disponibles y 1 reservada
+o	Cantidades: 3 unidades de la prenda 1 y 1 unidad de la prenda 2
+o	Token de invitado simulado, con el formato UUID que genera randomUUID
+•	Resultado Esperado:
+o	En el escenario A se devuelve el carrito con los dos renglones, el precio congelado y el subtotal
+o	En el escenario B se devuelve también un carrito, con un identificador y un token de invitado
+o	Al cambiar la cantidad de un renglón se conserva el precio_unitario con el que se añadió
+o	Al intentar superar el stock disponible se devuelve 422 con el mensaje de stock insuficiente
+o	SE VERIFICA EL PUNTO CRÍTICO: la tabla carritos tiene cinco columnas, que son id_carrito, id_usuario, estado, id_sucursal y fecha_creacion, y ninguna es token_invitado. El servicio la nombra en nueve sentencias SQL, así que se espera que la operación falle con un error de columna inexistente
+o	Si el carrito de invitado falla, se anota que el fallo no es solo del invitado: la lectura del carrito autenticado también pasa por el mismo método
+•	Condiciones:
+o	La ruta del carrito usa la única guardia opcional del proyecto, JwtOpcionalAuthGuard
+o	El servidor tiene la sincronizacion de TypeORM en falso, de modo que el esquema es el de schema.sql y no se cambia solo
+•	Procedimiento de Prueba:
+o	Entrar con la sesión del cliente y llamar a GET api/v1/carrito
+o	Añadir la prenda 1 con cantidad 3 por POST api/v1/carrito/items
+o	Añadir la prenda 2 con cantidad 1
+o	Leer el carrito otra vez y comprobar los precios unitarios
+o	Intentar añadir 20 unidades de la prenda 1, que superan las 18 disponibles
+o	Salir de la sesión, borrar el token y llamar a GET api/v1/carrito sin cabecera
+o	Intentar crear un carrito de invitado con POST y un token en la cabecera
+o	Anotar el mensaje de error exacto que devuelve PostgreSQL
+•	Interfaz: Contexto del carrito en React, pantalla de Checkout y ficha de producto con el botón de añadir al carrito
+
+Caso de Prueba CP-004: Checkout digital y creación de la venta
+•	Entrada:
+o	Cliente: maria.gonzales@correo.com, identificador de cliente 1
+o	Carrito con la prenda 1, variante 1, cantidad 2, precio unitario 89.00 Bs
+o	Subtotal esperado: 178.00 Bs
+o	Modalidad de entrega: Envío a domicilio
+o	Método de pago: Tarjeta
+o	Sucursal: 1 Tiendas Montaño - Centro
+•	Resultado Esperado:
+o	Se crea una venta con modalidad Online, metodo_pago Tarjeta y estado Pendiente
+o	El subtotal, los impuestos y el total se calculan y se guardan
+o	Los renglones se copian a venta_items con el precio congelado
+o	El carrito cambia de estado a En pago
+o	El total debe coincidir con la fórmula del proyecto, que es el precio base por uno más el porcentaje de IVA del producto
+o	La venta nace en Pendiente y no en Completada, aunque el valor por defecto de la columna sea Completada
+•	Condiciones:
+o	El cliente tiene rol 4 Cliente y sesión activa
+o	El carrito tiene estado Activo
+•	Procedimiento de Prueba:
+o	Entrar con la sesión del cliente y leer el carrito para confirmar el subtotal
+o	Enviar POST a api/v1/ventas/checkout con la modalidad y el método de pago
+o	Leyendo la respuesta, apuntar el identificador de la venta y su estado
+o	Consultar en la tabla ventas si el estado es Pendiente y no Completada
+o	Contar los renglones copiados en venta_items
+o	Comprobar en la tabla carritos que el estado pasó a En pago
+o	Repetir el envío con el mismo carrito y comprobar que devuelve 409 con el mensaje Este carrito ya fue procesado
+•	Interfaz: Pantalla de Checkout, paso 1 de 2, resumen del pedido
+
+Caso de Prueba CP-005: Venta presencial en caja y búsqueda de productos
+•	Entrada:
+o	Empleado: vendedor.lapaz@tiendasmontano.bo, rol 3 Vendedor
+o	Sucursal asignada: 1 Tiendas Montaño - Centro
+o	Término de búsqueda: polera
+o	Cliente de mostrador: la búsqueda por nombre Juan
+o	Prenda esperada: Polera Cuello V Algodon, código POL-001
+•	Resultado Esperado:
+o	La búsqueda devuelve la polera POL-001 con su precio y su disponibilidad
+o	La búsqueda de clientes devuelve a Juan Pablo Quirga Limón
+o	SE VERIFICA EL PUNTO CRÍTICO: la consulta de productos del punto de venta filtra por estado igual a Activo, y la tabla productos tiene como valor por defecto Disponible y el catálogo sembrado no escribe esa columna. Se espera que la búsqueda devuelva cero filas
+o	Si devuelve cero filas, la prueba se considera FALLIDA y el motivo es la diferencia entre el valor por defecto del esquema y el valor que filtra el código
+o	Si devuelve filas, hay que anotar cuáles y con qué valor de estado, porque significaría que alguien escribe esa columna
+•	Condiciones:
+o	El vendedor tiene sesión activa y está asociado a la sucursal 1
+o	El catálogo tiene los 24 productos del catálogo sembrado
+•	Procedimiento de Prueba:
+o	Entrar con la sesión del vendedor y abrir la pantalla de caja
+o	Escribir polera en el buscador de productos y lanzar la búsqueda
+o	Contar los resultados devueltos y anotar el estado de cada uno
+o	Consultar directamente en productos cuántos tienen estado Activo y cuántos tienen Disponible
+o	Escribir Juan en el buscador de clientes y anotar el resultado
+o	Repetir la búsqueda de productos escribiendo una cadena que no existe, para comprobar el caso vacío
+•	Interfaz: Pantalla administrativa de caja, buscador de productos y buscador de clientes
+
+Caso de Prueba CP-006: Cobro en efectivo y cálculo del vuelto
+•	Entrada:
+o	Empleado: vendedor.lapaz@tiendasmontano.bo
+o	Venta presencial de la prenda 1, variante 1, cantidad 2, subtotal 178.00 Bs
+o	Total calculated según el porcentaje de IVA del producto
+o	Efectivo entregado: 500.00 Bs
+o	Referencia externa del comprobante: VTA-TEST-0001
+•	Resultado Esperado:
+o	Se registra una transacción con proveedor CAJA, metodo Efectivo, estado Aprobado y moneda BOB
+o	La venta pasa de Pendiente a Completada
+o	El disponible de la variante 1 baja 2 unidades, de 18 a 16, y la cantidad_vendida sube 2
+o	El movimiento de inventario se inserta con tipo Venta y con la cantidad en negativo
+o	El vuelto devuelto es el efectivo menos el total, y nunca es negativo
+o	SE VERIFICA EL PUNTO CRÍTICO: el disponible tiene que bajar 2 y no 4. Este es el camino de cobro que está bien hecho, porque el actualizador suma a cantidad_vendida, que es otra columna, y el movimiento va en negativo, así que el disparador resta una sola vez
+o	Se emite el comprobante y su número aparece en la respuesta
+•	Condiciones:
+o	El vendedor tiene rol con el permiso procesar_pago
+o	La venta está en estado Pendiente
+•	Procedimiento de Prueba:
+o	Entrar con la sesión del vendedor y registrar la venta presencial
+o	Anotar el valor de las cuatro columnas de inventario_stock antes de cobrar
+o	Enviar POST a api/v1/pagos/caja con el efectivo entregado
+o	Leer el vuelto de la respuesta
+o	Volver a leer las cuatro columnas de inventario_stock y calcular la diferencia de disponible
+o	Comprobar en transacciones_pago que hay una fila con proveedor CAJA
+o	Repetir el cobro de la misma venta y comprobar que devuelve 409 con el mensaje La venta ya fue cobrada
+o Intentar cobrar con efectivo inferior al total y anotar el mensaje exacto
+•	Interfaz: Pantalla administrativa de caja, paso 2 de 2, campos de cobro y vuelto
+
+Caso de Prueba CP-007: Transacción de pago, firma inválida y webhook
+•	Entrada:
+o	Venta en estado Pendiente con identificador conocido
+o	Monto notificado: el total exacto de la venta
+o	Monto notificado alterado: el total más uno
+o	Firma calculada con la clave real
+o	Firma calculada con la cadena de reserva sandbox-secreto-cu35
+o	Resultado enviado: Aprobado
+•	Resultado Esperado:
+o	Con la firma correcta, la transacción pasa a Aprobado y la venta a Completada
+o	Con firma incorrecta se devuelve 401 con el mensaje Firma inválida.
+o	Con monto alterado se devuelve 401, porque la firma cubre el monto
+o	Al confirmar el pago, el carrito pasa a Convertido a venta
+o	SE VERIFICA EL PUNTO CRÍTICO: la comparación de firmas usa timingSafeEqual, que es lo correcto, así que la prueba pasa. Lo que hay que anotar es que la pasarela simulada es una ruta del propio servidor, POST pagos/sandbox/gateway, que firma con la misma clave y el mismo método, de manera que la firma no demuestra nada
+o	SE COMPRUEBA ADEMÁS que la ruta del webhook es la única de las dieciséis del paquete que no lleva guardia, y que eso es intencionado
+•	Condiciones:
+o	La variable PAGO_WEBHOOK_SECRET está definida o, si no, se está usando el valor de reserva
+o	La venta está en Pendiente
+•	Procedimiento de Prueba:
+o	Entrar con la sesión del cliente y crear una transacción con POST api/v1/pagos/transacciones
+o	Llamar a POST api/v1/pagos/sandbox/gateway pidiendo un resultado y amounting el monto exacto
+o	Enviar el webhook con esa firma y comprobar que la venta queda Completada
+o	Repetir el webhook con la misma firma y comprobar el comportamiento de idempotencia
+o	Generar una firma con el monto alterado y enviarla
+o	Generar una firma con la clave de reserva y enviarla
+o	Anotar los cuatro códigos de respuesta
+•	Interfaz: Pantalla de pasarela de pago, que permite elegir entre Aprobado, Rechazado y no responde
+
+Caso de Prueba CP-008: Emisión, idempotencia y numeración del comprobante
+•	Entrada:
+o	Venta en estado Completada con identificador conocido
+o	Cliente con datos fiscales: nombre, NIT y razón social
+o	Cliente sin datos fiscales
+o	Sucursal 1 Tiendas Montaño - Centro
+o	Número de comprobante esperado: correlativo por sucursal y por año
+•	Resultado Esperado:
+o	Con NIT y razón social el tipo es FACTURA; sin ellos es BOLETA. El tipo no se pasa por parámetro, se deduce
+o	El número es correlativo dentro de la sucursal y el año, y es único, porque la columna numero tiene UNIQUE
+o	Llamar dos veces a generar para la misma venta devuelve el mismo comprobante y no crea un segundo
+o	El PDF se devuelve como flujo de bytes, no como una dirección web
+o	SE VERIFICA EL PUNTO CRÍTICO: la generación tiene cuatro pasos, que son insertar el comprobante, componer el PDF, escribirlo en disco y actualizar la fila, y no está dentro de una transacción. Si se borra el fichero del disco entre la composición y la escritura, hay que comprobar que queda un comprobante con la dirección vacía
+o	Se comprueba que el directorio de comprobantes no está en el archivo de ignorado de Git
+•	Condiciones:
+o	La venta está Completada, porque si no el servicio devuelve 422 con el mensaje La venta no está pagada; no se puede emitir el comprobante.
+o	El directorio de almacenamiento existe o se puede crear
+•	Procedimiento de Prueba:
+o	Entrar con la sesión del cliente y llamar a GET api/v1/ventas/id/comprobante
+o	Anotar el tipo, el número y la ruta del fichero
+o	Llamar otra vez a la misma ruta y comprobar que el número no cambia
+o	Entrar con un cliente sin NIT y comprobar que el tipo es BOLETA
+o	Intentar emitir el comprobante de una venta en Pendiente
+o	Descargar el PDF con GET api/v1/ventas/id/pdf y comprobar que baja como fichero
+o	Borrar el PDF del disco y volver a pedir la descarga
+•	Interfaz: Pantalla de mis compras, columna del comprobante, con botones de abrir y descargar
+
+Caso de Prueba CP-009: Venta concurrente de la misma prenda
+•	Entrada:
+o	Variante con poco stock: la 21, Jean Slim Tacto Denim, 14 disponibles en la sucursal 1
+o	Dos compras simultáneas de 10 unidades cada una de esa misma variante
+o	Las dos con sesiones distintas, para que no se descarten por la misma cookie
+•	Resultado Esperado:
+o	De las dos ventas, solo una se completa y la otra recibe 409 con el mensaje El stock de este producto cambió. Disponible: N. No se puede completar la venta.
+o	El disponible final baja 10 y no 20
+o	La cantidad_vendida sube 10 y no 20
+o	SE VERIFICA EL PUNTO CRÍTICO: el servicio de pagos es el único del proyecto que usa FOR UPDATE, con cuatro bloqueos de fila, y el de inventario_stock está entre ellos. Esta prueba comprueba si el bloqueo serializa de verdad o si las dos transacciones se solapan
+o	Si las dos ventas se completan, se comprueba si el disponible queda en menos de cero, porque la tabla inventario_stock no tiene ningún CHECK que lo impida
+•	Condiciones:
+o	El disponible de la variante 21 es exactamente 14 antes de empezar
+o	El servicio de la API corre con más de una instancia, o al menos hay que anotar que con una sola instancia Node las dos peticiones se serializan por el bucle de eventos y la prueba no dice nada
+•	Procedimiento de Prueba:
+o	Anotar el disponible de la variante 21 en la sucursal 1
+o	Lanzar las dos peticiones de pago en paralelo, sin esperar una a la otra
+o	Leer los dos códigos de respuesta y el mensaje de la que falle
+o	Consultar el disponible, la reservada y la vendida de la variante 21
+o	Contar las filas de movimientos_inventario con tipo Venta y esa variante
+o	Repetir la prueba cinco veces, porque una prueba de concurrencia que se ejecuta una vez no demuestra nada
+•	Interfaz: No hay interfaz. Es una prueba de sistema sobre dos peticiones simultáneas, y se documenta precisamente por eso
+
+Caso de Prueba CP-010: Integridad del stock con el disparador y con el movimiento
+•	Entrada:
+o	Variante de prueba: la 21, con 14 disponibles
+o	Un movimiento de inventario con cantidad positiva y tipo SALIDA-RESERVA
+o	Un movimiento de inventario con cantidad negativa y tipo Venta
+o	Intento de dejar la cantidad_disponible en menos de cero
+o	Intento de escribir un estado de reserva que no existe, por ejemplo Aprobada
+•	Resultado Esperado:
+o	Un movimiento con cantidad positiva suma esa cantidad al disponible, porque el disparador suma el valor tal cual
+o	Un movimiento con cantidad negativa lo resta, y esa es la razón por la que el camino de venta funciona
+o	SE VERIFICA EL PUNTO CRÍTICO: no hay ningún CHECK en la tabla inventario_stock, de manera que el motor de la base de datos permite que la cantidad_disponible sea menos de cero y no dice nada
+o	SE VERIFICA EL SEGUNDO PUNTO CRÍTICO: la tabla reservas tiene cinco estados en el código y ninguno declarado en el esquema. Un estado escrito a mano que no sea uno de los cinco se acepta y deja la reserva sin poder avanzar ni cancelar
+o	Se cuenta cuántos CHECK hay en las 51 tablas del esquema. La respuesta es uno, y está en otra tabla
+•	Condiciones:
+o	La base de datos está creada con schema.sql, sin ninguna corrección posterior
+o	El disparador trg_movimiento_inventario está activo
+•	Procedimiento de Prueba:
+o	Insertar un movimiento con cantidad positiva y leer el disponible antes y después
+o	Insertar un movimiento con cantidad negativa y repetir la lectura
+o	Forzar un disponible negativo con un UPDATE directo y comprobar que la base de datos lo acepta sin error
+o	Actualizar el estado de una reserva a un valor inventado y comprobar que la base de datos lo acepta
+o	Intentar avanzar una reserva con ese estado y anotar el mensaje
+o	Contar las restricciones CHECK de todo el esquema con una consulta al catálogo del sistema
+•	Interfaz: No hay interfaz. Es una prueba de integración sobre el motor de la base de datos
+
+Caso de Prueba CP-011: Recomendaciones con perfil, sin perfil y con el motor de IA caído
+•	Entrada:
+o	Escenario A, cliente con historial: maria.gonzales@correo.com, identificador de cliente 1
+o	Escenario B, visitante sin sesión
+o	Escenario C, con la variable IA_SERVICE_URL apuntando a un puerto donde no hay nada
+o	Temporada vigente: Primavera-Verano 2026, identificador 1, del 1 de septiembre de 2026 al 28 de febrero de 2027
+o	Resultado del vestidor: Gusta sobre la variante 1
+•	Resultado Esperado:
+o	En el escenario A se devuelve una lista de prendas con un score de 0 a 100 y un motivo legible
+o	En el escenario B también se devuelve una lista, y si el perfil está vacío son las más vendidas de la temporada
+o	En el escenario C se devuelve la misma lista que en el escenario A, porque la llamada al motor externo falla y el motor interno responde
+o	SE VERIFICA EL PUNTO CRÍTICO: la consulta de candidatos filtra por LOWER de estado igual a activo, y la tabla productos tiene como valor por defecto Disponible. Se espera que la lista llegue vacía
+o	SE VERIFICA EL SEGUNDO PUNTO CRÍTICO: el permiso de recomendaciones lo comprueba el servicio y no la guardia, de manera que el visitante anónimo ve recomendaciones y el cliente registrado recibe 403
+o	Se comprueba que la tabla recomendaciones_ia, que tiene una columna llamada justificacion, sigue sin una sola fila
+•	Condiciones:
+o	El cliente tiene rol 4 Cliente
+o	La tabla preferencias_cliente tiene 14 filas sembradas
+•	Procedimiento de Prueba:
+o	Entrar con la sesión de maria.gonzales@correo.com y llamar a GET api/v1/recomendaciones
+o	Contar los elementos devueltos y anotar el score y el motivo de los tres primeros
+o	Salir de la sesión y llamar a la misma ruta sin token
+o	Arrancar la API con IA_SERVICE_URL apuntando al puerto 8002 sin nada escuchando y repetir la llamada
+o	Marcar un resultado Gusta de la variante 1 y volver a pedir recomendaciones para ver si el perfil cambia
+o	Consultar el número de filas de la tabla recomendaciones_ia
+•	Interfaz: Pantalla de recomendaciones del cliente, con la insignia del porcentaje y el motivo debajo de cada prenda
+
+Caso de Prueba CP-012: Reporte por voz, con y sin los servicios externos
+•	Entrada:
+o	Usuario con el permiso consultar_reportes
+o	Comando por texto: ventas de la sucursal 1 de esta semana en excel
+o	Comando por texto: inventario de la sucursal 2
+o	Comando por texto: disponibilidad de la sucursal 1 en csv
+o	Comando incompleto: ventas
+o	Audio con voz humana grabada en formato webm
+o	STT_SERVICE_URL e IA_SERVICE_URL sin definir, con los valores por defecto de los puertos 8001 y 8002
+•	Resultado Esperado:
+o	Con el comando completo, el servicio devuelve primero una pregunta de confirmación con el tipo, la sucursal, el periodo y el formato, y con el identificador de reporte en cero
+o	Al responder Sí, devuelve el identificador del reporte, la ruta del fichero y un resumen
+o	El fichero existe en el disco con el formato pedido, que puede ser pdf, xlsx o csv
+o	Con el comando incompleto se devuelve 422 con el mensaje Sucursal no encontrada. o Período no definido.
+o	SE VERIFICA EL PUNTO CRÍTICO: el servicio de transcripción y el de interpretación no están en el repositorio, y no hay ni un archivo de Python. El comando por texto tiene que funcionar igual, y el por audio tiene que devolver el mensaje No se pudo capturar el comando de voz
+o	SE COMPRUEBA que el reporte queda registrado en la tabla reportes_generativos y que hay una fila en bitacora_auditoria con las dos dentro de la misma transacción
+•	Condiciones:
+o	El usuario tiene el permiso consultar_reportes en el JSON del rol, cosa que en el catálogo sembrado no está
+o	El directorio de almacenamiento es local
+•	Procedimiento de Prueba:
+o	Entrar con un usuario con el permiso y enviar POST a api/v1/reportes/voz con el comando de ventas
+o	Leer la respuesta y comprobar que el identificador de reporte es cero y que viene la pregunta
+o	Responder con Sí y leer el identificador, la ruta y el resumen
+o	Comprobar que el fichero existe en el directorio de reportes y abrirlo
+o	Repetir con el comando de inventario y con el de disponibilidad, y comprobar los tres formatos
+o	Enviar solo la palabra ventas y anotar el mensaje
+o	Repetir el primer comando por audio
+o	Contar las filas de la tabla reportes_generativos y de bitacora_auditoria
+o	Anotar si las columnas tipo y formato de la tabla reportes_generativos admiten valores nulos, porque la migración dice que no y el esquema dice que sí
+•	Interfaz: Pantalla administrativa de reportes por voz, con el botón de grabar y el campo de texto
+
+
+Métricas de calidad de pruebas
+
+Las métricas se toman sobre los doce casos de la sección 3.5.2, y se reportan después de cada ejecución completa.
+
+Cobertura de requisitos. Es el número de casos de uso con al menos un caso de prueba que los ejecute, dividido entre los casos de uso del documento. Meta: 90 por ciento. Hoy la cobertura real es de nueve de diez paquetes, y el paquete 5 está excluido por un defecto de esquema documentado.
+
+Cobertura de rutas. Es el número de rutas ejercitadas dividido entre las 71 rutas de los quince controladores. Meta: 80 por ciento, y obligatoriamente el cien por ciento de las rutas de escritura de los paquetes 7, 8, 9 y 10, que son las que mueven dinero y stock.
+
+Densidad de defectos. Es el número de casos que fallan dividido entre los casos ejecutados. Meta: inferior al 15 por ciento en la primera ejecución, porque se espera que los casos de stock fallen por los defectos conocidos, y por debajo del 5 por ciento en la segunda.
+
+Tasa de éxito por paquete. Se mide por separado en los diez paquetes, porque los riesgos no son iguales. Meta: cien por ciento en los paquetes 1, 2, 3 y 10, y superior al 80 por ciento en los paquetes 6, 7, 8 y 9 mientras los defectos de stock no se corrijan.
+
+Estabilidad. Es el número de veces que hay que repetir una prueba antes de que dé un resultado válido. Meta: 2 como máximo, y la prueba de concurrencia de la CP-009 tiene que declarar su propio número de repeticiones, que no puede ser uno.
+
+Cobertura de código. Se mide con la herramienta de cobertura de Vitest sobre el backend. Meta: 60 por ciento global, y del 70 por ciento en SRV_ReservasService, SRV_VentasService, SRV_PagosService, SRV_ReportesVozService y SRV_ScoringService, que son los cinco ficheros con más lógica de negocio.
+
+Tiempo de ejecución. La suite completa no debe tardar más de cinco minutos, para que se pueda lanzar en cada entrega. Las pruebas de concurrencia y las de concurrencia de base de datos se permiten el doble.
+
+
+Criterios de aceptación
+
+Un caso de prueba se considera aceptado cuando se cumplen las cinco condiciones siguientes.
+
+La primera es que el resultado esperado se cumple íntegro. No vale cumplir el 90 por ciento, y en los casos marcados con punto crítico el margen es cero: si el disponible de la CP-002 baja 4 en lugar de 2, el caso se rechaza aunque todo lo demás esté bien, porque el defecto es silencioso y se acumula.
+
+La segunda es que los mensajes de error son los del proyecto y no otros. El sistema tiene sus propios mensajes, y un caso se acepta solo si la respuesta trae los que están escritos en el código. Por ejemplo, La venta ya fue procesada, La reserva debe estar en tienda para finalizarla, No tienes permisos para generar reportes, Firma inválida, El stock de este producto cambió, Sucursal no encontrada, Reporte de ventas: N registros, total Bs X.
+
+La tercera es que la prueba no depende del orden de ejecución. Cada caso tiene que preparar sus propios datos y limpiarlos al terminar, de manera que se pueda lanzar uno solo sin los demás. Los casos que hoy escriben en la base de datos de producción quedan excluidos de este criterio.
+
+La cuarta es que la prueba es repetible. Si al ejecutarla dos veces seguidas da resultados distintos, hay que anotar cuántos intentos hizo falta, y si hizo falta más de dos, el caso no se acepta y se considera un defecto de la propia prueba.
+
+La quinta es que el caso está documentado con los cinco apartados que exige el formato: entrada, resultado esperado, condiciones, procedimiento de prueba e interfaz. Un caso con un apartado vacío no se acepta, y un caso de sistema sin interfaz lo dice explícitamente en el apartado de interfaz, como hacen la CP-009 y la CP-010.
+
+Aparte de los cinco criterios, hay tres condiciones de aceptación generales del proyecto.
+
+Ninguna prueba puede apuntar a la base de datos de producción. La cadena de conexión de los once archivos e2e_cuNN.js tiene que salir del código y pasar a un archivo de entorno, y las credenciales tienen que dejar de estar escritas en el repositorio, porque hoy están en diecisiete archivos.
+
+Las 71 rutas tienen que responder de forma conocida a una petición sin sesión. O sea, 401 o 403. No puede haber ninguna ruta que devuelva datos sin comprobar quién pregunta, y hoy hay que verificarlo ruta por ruta porque las guardias no son homogéneas: hay controladores con la guardia a nivel de clase, hay controladores con la guardia en cada ruta, hay una ruta sin guardia a propósito, que es el webhook, y hay dos rutas con la guardia opcional, que son las del carrito y las de recomendaciones.
+
+El catálogo de datos tiene que coincidir con el código. Antes de dar por buena cualquier prueba que lea una columna, hay que verificar que esa columna existe en el esquema, porque ya se han encontrado dos que no, que son carritos.token_invitado y sesiones_ra.foto_resultado, con 55 apariciones entre las dos en todo el proyecto. Este criterio se puede automatizar con una consulta que compare las columnas que aparecen en los INSERT del código con las del catálogo de información de la base de datos.

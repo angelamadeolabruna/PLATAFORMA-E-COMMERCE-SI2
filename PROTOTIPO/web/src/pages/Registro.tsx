@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api.js';
 import { Button } from '@/components/ui/Button.js';
@@ -9,6 +9,8 @@ import logoUrl from '@/assets/logo.png';
 
 export function Registro() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect')?.startsWith('/') ? searchParams.get('redirect') : null;
 
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
@@ -56,7 +58,7 @@ export function Registro() {
         setError(resultado.warning);
         return;
       }
-      window.setTimeout(() => navigate('/login'), 2500);
+      window.setTimeout(() => navigate(redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login'), 2500);
     } catch (err) {
       setEnviando(false);
       if (err instanceof ApiError) {
@@ -170,7 +172,7 @@ export function Registro() {
 
         <p className="mt-5 text-center text-sm text-ink-500">
           ¿Ya tienes cuenta?{' '}
-          <Link to="/login" className="font-semibold text-brand-600 hover:text-brand-700">
+          <Link to={redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login'} className="font-semibold text-brand-600 hover:text-brand-700">
             Inicia sesión
           </Link>
         </p>

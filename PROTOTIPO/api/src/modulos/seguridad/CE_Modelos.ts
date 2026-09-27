@@ -330,3 +330,27 @@ export class BitacoraAuditoria {
   @CreateDateColumn({ name: 'fecha_hora', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   fecha_hora: Date;
 }
+
+@Entity('reportes_generativos')
+export class ReporteGenerativo {
+  @PrimaryGeneratedColumn({ name: 'id_reporte' })
+  id_reporte: number;
+
+  @Column({ name: 'id_usuario', type: 'int' })
+  id_usuario: number;
+
+  @Column({ name: 'tipo', type: 'varchar', length: 40 })
+  tipo: string;
+
+  @Column({ name: 'parametros', type: 'jsonb' })
+  parametros: Record<string, unknown>;
+
+  @Column({ name: 'formato', type: 'varchar', length: 10 })
+  formato: string;
+
+  @Column({ name: 'url_archivo', type: 'text' })
+  url_archivo: string;
+
+  @CreateDateColumn({ name: 'fecha', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  fecha: Date;
+}

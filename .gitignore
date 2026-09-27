@@ -4,6 +4,23 @@ node_modules/
 # Entorno / secretos (nunca subir credenciales)
 **/.env
 
+# Pruebas de extremo a extremo: llevan la cadena de conexion de la base
+# de datos de PRODUCCION escrita dentro. Deben leerla de process.env.
+PROTOTIPO/e2e_cu*.js
+PROTOTIPO/e2e_*.js
+
+# Scripts de mantenimiento que conectan con la nube
+PROTOTIPO/api/src/modulos/*/agregar-permiso*.js
+PROTOTIPO/api/src/modulos/*/quitar-permiso*.js
+PROTOTIPO/api/src/modulos/*/check-roles.js
+
+# Comprobantes emitidos, respaldos y ficheros generados en runtime.
+# Contienen datos de clientes y de ventas.
+PROTOTIPO/api/comprobantes/
+PROTOTIPO/api/respaldos/
+PROTOTIPO/api/storage/
+PROTOTIPO/test-results/
+
 # Builds
 dist/
 build/

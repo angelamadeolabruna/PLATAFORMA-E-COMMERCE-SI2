@@ -1,0 +1,118 @@
+CU01 - INICIAR SESIÓN EN PLATAFORMA
+REFERENCIA DE CLASES DEL DIAGRAMA DE ANÁLISIS
+
+Paquete: Casos de Uso > 1. Seguridad y Autenticación > CU01 - Análisis de clases
+Diagrama: CU01 - Análisis de Clases
+
+================================================================
+ACTORES (referencias externas, no son clases)
+================================================================
+Administrador            alias ACTOR_Administrador
+Encargado de Sucursal    alias ACTOR_EncargadoSucursal
+Cajero                   alias ACTOR_Cajero
+Cliente                  alias ACTOR_Cliente
+
+Los 4 se asocian a Login con el rol "usuario" (1 -> 0..1).
+
+================================================================
+15 CLASES
+================================================================
+#   Clase                Estereotipo  Alias                  Atrib  Ope   Origen
+1   Login                Boundary     IU_Login                 5     2   pages/Login.tsx
+2   AuthProvider         Boundary     IU_AuthProvider          3     3   contexts/AuthContext.tsx
+3   api                  Boundary     IU_Api                   1     3   lib/api.ts
+4   AuthController       Control      CTR_Auth                 1     3   CTR_Auth.ts
+5   LoginRequest         DTO          CE_LoginRequest          2     0   Esquemas.ts
+6   AuthService          Service      SRV_AuthService          4     4   SRV_AuthService.ts
+7   JwtTokenService      Service      SRV_JwtTokenService      3     5   SRV_JWTService.ts
+8   SeguridadService     Service      SRV_SeguridadService     0     2   SRV_SeguridadService.ts
+9   DataSource           Service      SRV_DataSource           0     2   TypeORM
+10  BitacoraService      Service      SRV_BitacoraService      0     1   SRV_BitacoraService.ts
+11  AuthResponse         DTO          CE_AuthResponse          4     0   Esquemas.ts
+12  Usuario              Entity       CE_Usuario               7     2   tabla usuarios
+13  UsuarioRol           Entity       CE_UsuarioRol            2     0   tabla usuarios_roles
+14  Rol                  Entity       CE_Rol                   4     0   tabla roles
+15  BitacoraAuditoria    Entity       CE_BitacoraAuditoria     9     0   tabla bitacora_auditoria
+
+Totales: 45 atributos, 27 operaciones.
+
+================================================================
+17 RELACIONES (estáticas, sin mensajes)
+================================================================
+Origen           Destino        Relación                     Tipo        Multiplicidad
+Administrador    Login          usuario                      Asociación  1 -> 0..1
+EncargadoSuc.    Login          usuario                      Asociación  1 -> 0..1
+Cajero           Login          usuario                      Asociación  1 -> 0..1
+Cliente          Login          usuario                      Asociación  1 -> 0..1
+Login            AuthProvider   sesión de usuario            Asociación  1 -> 1
+AuthProvider     api            cliente HTTP                 Dependecia   1 -> 1
+api              AuthController punto de acceso HTTP         Dependecia   1 -> 0..1
+AuthController   LoginRequest   datos de entrada             Asociación  1 -> 1
+AuthController   AuthService    servicio de autenticación    Asociación  1 -> 1
+AuthController   AuthResponse   datos de salida              Asociación  1 -> 1
+AuthService      SeguridadService verificación de contraseña Dependecia  1 -> 1
+AuthService      JwtTokenService emisión de tokens          Asociación  1 -> 1
+AuthService      BitacoraService auditoría de accesos       Asociación  1 -> 1
+AuthService      DataSource     persistencia                 Dependecia   1 -> 1
+AuthService      Usuario        cuenta autenticada           Agregación   1 -> 0..1
+AuthResponse     Usuario        datos de sesión              Dependecia   1 -> 1
+Usuario          UsuarioRol     roles asignados              Composición  1 -> 0..*
+UsuarioRol       Rol            rol asignado                Asociación  1 -> 1
+BitacoraService  BitacoraAuditoria registro de auditoría    Composición  1 -> 1
+BitacoraAuditoria Usuario       usuario de la acción         Asociación  0..* -> 1
+
+================================================================
+DISCREPANCIAS CON EL CASO DE USO (documentadas en notas)
+================================================================
+1. El caso describe Angular (LoginComponent, AuthService, AuthGuard) y FastAPI.
+   La implementación real es React/Vite (Login.tsx, AuthContext.tsx, api.ts)
+   con NestJS (CTR_Auth.ts, SRV_AuthService.ts).
+
+2. El cuerpo real es { credencial, password } y no { email, password }.
+   AuthService.buscarPorCredencial() acepta LOWER(email) o ci.
+
+3. No existe AuthGuard. El campo del formulario se rotula
+   "Correo electrónico o usuario" y el botón es "Ingresar".
+
+4. No existen las rutas /inicio, /sucursal ni /caja. Login.tsx navega a
+   destino, o a /admin para Administrador, Encargado de Sucursal y Cajero,
+   y a / para clientes.
+
+5. access_token dura 15 minutos (JWT_ACCESS_TOKEN_MINUTES, por defecto 15),
+   no 8 horas. refresh_token dura 7 días (JWT_REFRESH_TOKEN_DAYS).
+   El payload es { sub, rol, permisos, type, jti, iat, exp } y no incluye email.
+
+6. Almacenamiento: AuthProvider escribe access_token y usuario en localStorage,
+   y AuthController fija además cookies httpOnly access_token y refresh_token
+   con sameSite lax y path /. No existe la cookie session_tt ni sessionStorage.
+   No hay cliente Flutter.
+
+7. La respuesta usa la clave "usuario" con { id, nombre, email, rol, permisos }
+   y no incluye avatar. No existe columna usuarios.rol: el rol se obtiene
+   por usuarios_roles.
+
+8. Excepciones: usuario inexistente, estado distinto de 'activo' o contraseña
+   incorrecta devuelven 401 "Credenciales inválidas.". No hay 403 de cuenta
+   deshabilitada ni 429 con minutos restantes. Una cuenta bloqueada devuelve
+   423 Locked y no hay countdown.
+
+9. Bloqueo: al quinto fallo se guarda bloqueado_hasta = NOW() + 15 minutos y
+   se reinicia intentos_fallidos a 0. El trigger fn_incrementar_intentos de
+   schema.sql además pone estado = 'Bloqueado', lo que hace que el usuario
+   bloqueado reciba 401 en lugar de 423.
+
+10. Bitácora: registrar() escribe accion_sql, tabla_afectada, id_registro,
+    detalle, ip_address, user_agent y fecha_hora. No usa new_data con
+    { resultado: 'Exitoso' }.
+
+11. No hay validación de correo con expresión regular, ni toast, ni botón
+    Reintentar, ni timeout de 10 segundos.
+
+================================================================
+LIMITACIÓN DE ENTERPRISE ARCHITECT EN ESTA MÁQUINA
+================================================================
+La API de scripting de EA no crea atributos: se probaron 9 firmas de
+AddAttribute y Attributes.AddNew y ninguna funciona, aunque crear elementos,
+renombrarlos y cambiar estereotipos sí funciona. Por eso los 45 atributos y
+las 27 operaciones se incorporan manualmente con los archivos tabulados
+CU01_atributos.txt y CU01_operaciones.txt.

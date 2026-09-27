@@ -1,6 +1,8 @@
 import {
+  Mic,
   BellRing,
   Boxes,
+  CalendarClock,
   CalendarRange,
   ClipboardList,
   type LucideIcon,
@@ -17,6 +19,7 @@ import {
   Tags,
   Truck,
   UserPlus,
+  ShoppingCart,
 } from 'lucide-react';
 
 export interface ItemMenuAdmin {
@@ -203,6 +206,48 @@ export const PAQUETES_ADMIN: PaqueteMenu[] = [
         cu: 'CU27',
         permiso: 'respaldos',
         icono: DatabaseBackup,
+        implementado: true,
+      },
+    ],
+  },
+  {
+    id: 'reservas',
+    titulo: 'Reservas y Atención',
+    items: [
+      {
+        ruta: '/admin/reservas',
+        etiqueta: 'Reservas de mi Sucursal',
+        cu: 'CU30',
+        permiso: 'gestionar_reservas',
+        icono: CalendarClock,
+        implementado: true,
+      },
+    ],
+  },
+  {
+    id: 'caja',
+    titulo: 'Caja y Ventas',
+    items: [
+      {
+        ruta: '/admin/caja',
+        etiqueta: 'Nueva Venta (POS)',
+        cu: 'CU36',
+        permiso: 'realizar_venta',
+        icono: ShoppingCart,
+        implementado: true,
+      },
+    ],
+  },
+  {
+    id: 'reportes',
+    titulo: 'Reportes e Inteligencia',
+    items: [
+      {
+        ruta: '/admin/reportes/voz',
+        etiqueta: 'Reportes por Voz (IA)',
+        cu: 'CU43',
+        permiso: 'consultar_reportes',
+        icono: Mic,
         implementado: true,
       },
     ],

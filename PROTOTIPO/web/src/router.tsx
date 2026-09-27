@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { LayoutRaiz } from '@/components/layout/LayoutRaiz.js';
 import { AdminLayout } from '@/components/layout/admin/AdminLayout.js';
+import { ClienteLayout } from '@/components/layout/cliente/ClienteLayout.js';
 import { Home } from '@/pages/Home.js';
 import { Catalogo } from '@/pages/Catalogo.js';
 import { Producto } from '@/pages/Producto.js';
@@ -11,6 +12,7 @@ import { RecuperarContrasena } from '@/pages/RecuperarContrasena.js';
 import { RestablecerContrasena } from '@/pages/RestablecerContrasena.js';
 import { EstablecerContrasena } from '@/pages/EstablecerContrasena.js';
 import { Auditoria } from '@/pages/admin/Auditoria.js';
+import { ReportesVoz } from '@/pages/admin/ReportesVoz.js';
 import { Usuarios } from '@/pages/admin/Usuarios.js';
 import { Roles } from '@/pages/admin/Roles.js';
 import { Sucursales } from '@/pages/admin/Sucursales.js';
@@ -24,7 +26,16 @@ import { AdminAjustes } from '@/pages/admin/AdminAjustes.js';
 import { AdminAlertas } from '@/pages/admin/AdminAlertas.js';
 import { AdminExistencias } from '@/pages/admin/AdminExistencias.js';
 import { AdminRespaldos } from '@/pages/admin/AdminRespaldos.js';
+import { AdminReservas } from '@/pages/admin/AdminReservas.js';
+import { AdminCaja } from '@/pages/admin/AdminCaja.js';
 import { AdminPlaceholder } from '@/pages/admin/AdminPlaceholder.js';
+import { MisReservas } from '@/pages/cliente/MisReservas.js';
+import { MisPruebasRa } from '@/pages/cliente/MisPruebasRa.js';
+import { DetalleReserva } from '@/pages/cliente/DetalleReserva.js';
+import { MisCompras } from '@/pages/cliente/MisCompras.js';
+import { Recomendaciones } from '@/pages/cliente/Recomendaciones.js';
+import { Checkout } from '@/pages/Checkout.js';
+import { SandboxPago } from '@/pages/SandboxPago.js';
 import { EnConstruccion } from '@/pages/EnConstruccion.js';
 
 function Placeholder({ titulo }: { titulo: string }): ReactNode {
@@ -40,6 +51,9 @@ export function RouterApp() {
         <Route path="/productos" element={<Navigate to="/catalogo" replace />} />
         <Route path="/productos/:codigo" element={<Producto />} />
         <Route path="/carrito" element={<Placeholder titulo="Carrito de compras" />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/sandbox-pago" element={<SandboxPago />} />
+        <Route path="/reservas/nueva" element={<Navigate to="/catalogo" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
         <Route path="/recuperar-contraseña" element={<RecuperarContrasena />} />
@@ -63,8 +77,25 @@ export function RouterApp() {
         <Route path="inventario/alertas" element={<AdminAlertas />} />
         <Route path="inventario/existencias" element={<AdminExistencias />} />
         <Route path="inventario/backup" element={<AdminRespaldos />} />
+        <Route path="reservas" element={<AdminReservas />} />
+        <Route path="caja" element={<AdminCaja />} />
         <Route path="auditoria" element={<Auditoria />} />
+        <Route path="reportes/voz" element={<ReportesVoz />} />
         <Route path="*" element={<AdminPlaceholder />} />
+      </Route>
+
+      <Route path="/reservas" element={<ClienteLayout />}>
+        <Route index element={<MisReservas />} />
+        <Route path=":id" element={<DetalleReserva />} />
+        <Route path="pruebas-ra" element={<MisPruebasRa />} />
+      </Route>
+
+      <Route path="/compras" element={<ClienteLayout />}>
+        <Route index element={<MisCompras />} />
+      </Route>
+
+      <Route path="/recomendaciones" element={<ClienteLayout />}>
+        <Route index element={<Recomendaciones />} />
       </Route>
     </Routes>
   );

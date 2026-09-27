@@ -246,6 +246,7 @@ CREATE TABLE producto_talla_color (
 CREATE TABLE producto_imagenes (
     id_imagen    SERIAL PRIMARY KEY,
     id_producto  INTEGER REFERENCES productos(id_producto) ON DELETE CASCADE,
+    id_color     INTEGER REFERENCES colores(id_color) ON DELETE SET NULL,
     url          TEXT NOT NULL,
     es_principal BOOLEAN DEFAULT false,
     orden        INTEGER

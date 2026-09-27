@@ -1,0 +1,101 @@
+CU01 - INICIAR SESIÓN EN PLATAFORMA
+OPERACIONES PARA PEGAR EN EA (Properties > Operations > New > Ctrl+V)
+
+El formato es: Name <TAB> ReturnType <TAB> Parameters <TAB> Notes
+Copia SOLO las líneas del bloque de cada clase.
+
+================================================================
+Login  (Boundary)  alias IU_Login
+================================================================
+onSubmit	void	e: FormEvent	
+render	JSX.Element		
+
+================================================================
+AuthProvider  (Boundary)  alias IU_AuthProvider
+================================================================
+login	UsuarioSesion	credencial, password	
+logout	void		
+setUsuario	void	nuevo	
+
+================================================================
+api  (Boundary)  alias IU_Api
+================================================================
+login	LoginResponse	credencial, password	
+logout	void		
+solicitar	Response	url, init, opciones	
+
+================================================================
+AuthController  (Control)  alias CTR_Auth
+================================================================
+login	AuthResponse	body, request, response	
+refresh	AuthResponse	body, request, response	
+logout	void	request, response, currentUser	
+
+================================================================
+LoginRequest  (DTO)  alias CE_LoginRequest
+================================================================
+(sin operaciones)
+
+================================================================
+AuthService  (Service)  alias SRV_AuthService
+================================================================
+autenticar	AuthResponse	credencial, password, request	
+buscarPorCredencial	Usuario	credencial	
+refrescar	AuthResponse	request, refresco	
+cerrarSesion	void	usuario, token, refreshToken	
+
+================================================================
+JwtTokenService  (Service)  alias SRV_JwtTokenService
+================================================================
+generarPar	Par	subject, rol, permisos	
+crearAccessToken	String	subject, rol, permisos	
+crearRefreshToken	String	subject	
+verificarRefreshToken	TokenPayload	token	
+estaEnBlacklist	Boolean	jti	
+
+================================================================
+SeguridadService  (Service)  alias SRV_SeguridadService
+================================================================
+validarPassword	Boolean	usuario, password	
+hashearPassword	String	password	
+
+================================================================
+DataSource  (Service)  alias SRV_DataSource
+================================================================
+getRepository	Repository	entidad	
+query	Array	sql, params	
+
+================================================================
+BitacoraService  (Service)  alias SRV_BitacoraService
+================================================================
+registrar	BitacoraAuditoria	idUsuario, accion, tabla, detalle	
+
+================================================================
+AuthResponse  (DTO)  alias CE_AuthResponse
+================================================================
+(sin operaciones)
+
+================================================================
+Usuario  (Entity)  alias CE_Usuario
+================================================================
+get rol	Rol		
+get nombre	String		
+
+================================================================
+UsuarioRol  (Entity)  alias CE_UsuarioRol
+================================================================
+(sin operaciones)
+
+================================================================
+Rol  (Entity)  alias CE_Rol
+================================================================
+(sin operaciones)
+
+================================================================
+BitacoraAuditoria  (Entity)  alias CE_BitacoraAuditoria
+================================================================
+(sin operaciones)
+
+================================================================
+TOTAL: 27 operaciones en 15 clases
+Origen: código real React/Vite (web) + NestJS (api)

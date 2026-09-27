@@ -9,6 +9,14 @@ import { ProveedoresModule } from './modulos/proveedores/proveedores.module.js';
 import { ComprasModule } from './modulos/compras/compras.module.js';
 import { InventarioModule } from './modulos/inventario/inventario.module.js';
 import { RespaldosModule } from './modulos/respaldos/RespaldosModule.js';
+import { ReservasModule } from './modulos/reservas/ReservasModule.js';
+import { SesionesRaModule } from './modulos/sesiones-ra/SesionesRaModule.js';
+import { CarritoModule } from './modulos/carrito/CarritoModule.js';
+import { VentasModule } from './modulos/ventas/VentasModule.js';
+import { PagosModule } from './modulos/pagos/PagosModule.js';
+import { ComprobantesModule } from './modulos/comprobantes/ComprobantesModule.js';
+import { RecomendacionesModule } from './modulos/recomendaciones/RecomendacionesModule.js';
+import { ReportesVozModule } from './modulos/reportes-voz/ReportesVozModule.js';
 
 @Module({
   imports: [
@@ -33,6 +41,14 @@ import { RespaldosModule } from './modulos/respaldos/RespaldosModule.js';
     ComprasModule,
     InventarioModule,
     RespaldosModule,
+    ReservasModule,
+    SesionesRaModule,
+    CarritoModule,
+    VentasModule,
+    PagosModule,
+    ComprobantesModule,
+    RecomendacionesModule,
+    ReportesVozModule,
   ],
   controllers: [HealthController],
 })

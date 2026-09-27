@@ -185,6 +185,7 @@ export interface CiudadItem {
 }
 
 export interface LineaDisponibilidad {
+  id_ptc: number;
   talla: string;
   color: string;
   codigo_hex: string | null;
@@ -202,6 +203,13 @@ export interface SucursalDisponibilidad {
   lineas: LineaDisponibilidad[];
 }
 
+export interface ImagenProductoPublica {
+  url: string;
+  es_principal: boolean;
+  color: string | null;
+  codigo_hex: string | null;
+}
+
 export interface ConsultaDisponibilidad {
   producto: {
     id_producto: number;
@@ -211,9 +219,11 @@ export interface ConsultaDisponibilidad {
     precio: number;
     categoria: string | null;
     imagen_principal: string | null;
+    modelo_3d_url: string | null;
   };
+  imagenes?: ImagenProductoPublica[];
   tallas: Array<{ nombre: string }>;
-  colores: Array<{ nombre: string; codigo_hex: string | null }>;
+  colores: Array<{ nombre: string; codigo_hex: string | null; imagen_url?: string | null }>;
   sucursales: SucursalDisponibilidad[];
 }
 
@@ -658,6 +668,316 @@ export interface GuardarProgramacionPayload {
   hora: string;
   dia_semana?: number | null;
   activo?: boolean;
+}
+
+// CU28 - Realizar Reserva de Múltiples Prendas
+export interface HorarioSucursal {
+  dia_semana: string;
+  horario_apertura: string;
+  horario_cierre: string;
+}
+
+export interface OpcionSucursalReserva {
+  id_sucursal: number;
+  nombre: string;
+  direccion: string | null;
+  telefono: string | null;
+  horarios: HorarioSucursal[];
+}
+
+export interface OpcionProductoReserva {
+  id_ptc: number;
+  id_producto: number;
+  nombre_producto: string;
+  talla: string;
+  color: string;
+  precio_base: number;
+  imagen_principal: string | null;
+}
+
+export interface OpcionesReserva {
+  sucursales: OpcionSucursalReserva[];
+  productos: OpcionProductoReserva[];
+}
+
+export interface DisponibilidadSucursalItem {
+  id_ptc: number;
+  cantidad_disponible: number;
+  cantidad_reservada: number;
+}
+
+export interface DisponibilidadSucursal {
+  id_sucursal: number;
+  items: DisponibilidadSucursalItem[];
+}
+
+export interface ItemReservaPayload {
+  id_ptc: number;
+  cantidad: number;
+}
+
+export interface CrearReservaPayload {
+  id_sucursal: number;
+  fecha_reserva: string;
+  hora_reserva: string;
+  items: ItemReservaPayload[];
+}
+
+export interface CrearReservaResultado {
+  detail: string;
+  id_reserva: number;
+  numero: string;
+  estado: string;
+  total_items: number;
+}
+
+// CU29 - Consultar y Cancelar el Estado de una Reserva
+export interface ReservaListaItem {
+  id_reserva: number;
+  numero: string;
+  estado: string;
+  sucursal: string;
+  fecha_reserva: string;
+  hora_reserva: string;
+  fecha_creacion: string;
+  cantidad_prendas: number;
+}
+
+export interface ReservaDetalleItem {
+  id_ptc: number;
+  cantidad: number;
+  nombre_producto: string;
+  codigo: string;
+  talla: string;
+  color: string;
+  precio_base: number;
+}
+
+export interface ReservaDetalle {
+  reserva: {
+    id_reserva: number;
+    numero: string;
+    estado: string;
+    sucursal: string;
+    direccion: string | null;
+    ciudad: string | null;
+    telefono: string | null;
+    fecha_reserva: string;
+    hora_reserva: string;
+    fecha_creacion: string;
+    fecha_preparada: string | null;
+    fecha_atendida: string | null;
+    id_encargado: number | null;
+  };
+  items: ReservaDetalleItem[];
+}
+
+export interface CancelarReservaResultado {
+  message: string;
+  estado: string;
+}
+
+// CU31 - Confirmar Recepción del Cliente en el Vestidor
+export interface TransicionReservaResultado {
+  message: string;
+  numero: string;
+  estado: string;
+}
+
+export interface FinalizarReservaResultado {
+  message: string;
+  numero: string;
+  estado: string;
+  stock_liberado: number;
+}
+
+// CU30 - Notificar Reserva a la Sucursal
+export interface PrendaReservaSucursal {
+  nombre_producto: string;
+  talla: string;
+  color: string;
+  cantidad: number;
+}
+
+export interface ReservaSucursalItem {
+  id_reserva: number;
+  numero: string;
+  estado: string;
+  id_sucursal: number;
+  sucursal: string;
+  cliente: string | null;
+  cliente_email: string | null;
+  fecha_reserva: string;
+  hora_reserva: string;
+  fecha_creacion: string;
+  cantidad_prendas: number;
+  prendas: PrendaReservaSucursal[];
+}
+
+export interface RespuestaReservasSucursal {
+  total: number;
+  sucursal: { id_sucursal: number; nombre: string } | null;
+  items: ReservaSucursalItem[];
+}
+
+export interface ConteoReservasPendientes {
+  total: number;
+  sucursal: { id_sucursal: number; nombre: string } | null;
+}
+
+export interface DetalleReservaSucursal {
+  reserva: {
+    id_reserva: number;
+    numero: string;
+    estado: string;
+    sucursal: string;
+    direccion: string | null;
+    ciudad: string | null;
+    telefono: string | null;
+    fecha_reserva: string;
+    hora_reserva: string;
+    fecha_creacion: string;
+    fecha_preparada: string | null;
+    fecha_atendida: string | null;
+    id_encargado: number | null;
+    cliente: string | null;
+    cliente_email: string | null;
+  };
+  items: ReservaDetalleItem[];
+}
+
+export interface RespuestaSesionRa {
+  detail: string;
+  id_sesion_ra: number;
+  id_usuario: number;
+  id_ptc: number;
+  medidas_avatar: string | null;
+  foto_resultado: string | null;
+  fecha: string;
+  id_reserva: number | null;
+  id_carrito: number | null;
+  prenda: {
+    id_producto: number;
+    nombre: string;
+    talla: string;
+    color: string;
+    modelo_3d_url: string | null;
+  };
+}
+
+export interface RespuestaResultadoRa {
+  detail: string;
+  id_resultado: number;
+  id_sesion_ra: number;
+  resultado: 'Gusta' | 'No gusta';
+  fecha: string;
+  actualizado: boolean;
+}
+
+export interface HistorialSesionRaItem {
+  id_sesion_ra: number;
+  id_ptc: number;
+  medidas_avatar: string | null;
+  foto_resultado: string | null;
+  fecha: string;
+  id_reserva: number | null;
+  id_carrito: number | null;
+  prenda: {
+    id_producto: number;
+    nombre: string;
+    codigo: string;
+    imagen_principal: string | null;
+    talla: string;
+    color: string;
+    modelo_3d_url: string | null;
+  };
+  resultado: 'Gusta' | 'No gusta' | null;
+  fecha_resultado: string | null;
+}
+
+// CU33 - Carrito de compras
+const TOKEN_INVITADO_KEY = 'carrito_token_invitado';
+
+export function leerTokenInvitado(): string | null {
+  return localStorage.getItem(TOKEN_INVITADO_KEY);
+}
+
+export function guardarTokenInvitado(token: string | null): void {
+  if (token) localStorage.setItem(TOKEN_INVITADO_KEY, token);
+  else localStorage.removeItem(TOKEN_INVITADO_KEY);
+}
+
+function headersConTokenInvitado(base?: Record<string, string>): Record<string, string> {
+  const headers = { ...base };
+  if (!headers.Authorization) {
+    const invitado = leerTokenInvitado();
+    if (invitado) headers['X-Carrito-Token'] = invitado;
+  }
+  return headers;
+}
+
+export interface CarritoItemPrenda {
+  id_producto: number;
+  codigo: string;
+  nombre: string;
+  talla: string;
+  color: string;
+  imagen_principal: string | null;
+}
+
+export interface CarritoItem {
+  id_carrito_item: number;
+  id_ptc: number;
+  cantidad: number;
+  precio_unitario: number;
+  subtotal_item: number;
+  prenda: CarritoItemPrenda;
+}
+
+export interface CarritoRespuesta {
+  carrito: {
+    id_carrito: number;
+    id_sucursal: number;
+    items: CarritoItem[];
+  } | null;
+  subtotal: number;
+  item: {
+    id_carrito_item: number;
+    id_ptc: number;
+    cantidad: number;
+    precio_unitario: number;
+  } | null;
+  token_invitado: string | null;
+}
+
+export interface RespuestaAgregarCarrito extends CarritoRespuesta {
+  item: NonNullable<CarritoRespuesta['item']>;
+}
+
+export interface ItemCheckout {
+  id_ptc: number;
+  cantidad: number;
+  precio_unitario: number;
+  subtotal: number;
+}
+
+export interface ResumenCheckout {
+  id_carrito: number;
+  modalidad: 'Retiro' | 'Entrega';
+  metodo_pago: 'Tarjeta' | 'QR' | 'Transferencia';
+  id_sucursal: number;
+  sucursal: string;
+  subtotal: number;
+  impuestos: number;
+  total: number;
+  items: ItemCheckout[];
+}
+
+export interface RespuestaCheckout {
+  id_venta: number;
+  total: number;
+  estado: 'Pendiente';
+  resumen: ResumenCheckout;
 }
 
 export class ApiError extends Error {
@@ -1356,4 +1676,430 @@ export const api = {
     });
     return handleResponse(res);
   },
+
+  // CU28 - Reservas
+  async obtenerOpcionesReserva(): Promise<OpcionesReserva> {
+    const res = await solicitar(`${this.baseUrl}/reservas/opciones`);
+    return handleResponse<OpcionesReserva>(res);
+  },
+
+  async obtenerDisponibilidadReserva(idSucursal: number): Promise<DisponibilidadSucursal> {
+    const res = await solicitar(`${this.baseUrl}/reservas/disponibilidad/${idSucursal}`);
+    return handleResponse<DisponibilidadSucursal>(res);
+  },
+
+  async crearReserva(payload: CrearReservaPayload): Promise<CrearReservaResultado> {
+    const res = await solicitar(`${this.baseUrl}/reservas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<CrearReservaResultado>(res);
+  },
+
+  // CU29 - Consultar y Cancelar el Estado de una Reserva
+  async listarReservasMias(): Promise<ReservaListaItem[]> {
+    const res = await solicitar(`${this.baseUrl}/reservas/mias`);
+    return handleResponse<ReservaListaItem[]>(res);
+  },
+
+  async obtenerReservaDetalle(idReserva: number): Promise<ReservaDetalle> {
+    const res = await solicitar(`${this.baseUrl}/reservas/${idReserva}`);
+    return handleResponse<ReservaDetalle>(res);
+  },
+
+  async cancelarReserva(idReserva: number): Promise<CancelarReservaResultado> {
+    const res = await solicitar(`${this.baseUrl}/reservas/${idReserva}/cancelar`, {
+      method: 'PATCH',
+    });
+    return handleResponse<CancelarReservaResultado>(res);
+  },
+
+  // CU30 - Notificar Reserva a la Sucursal
+  async listarReservasSucursal(): Promise<RespuestaReservasSucursal> {
+    const res = await solicitar(`${this.baseUrl}/reservas/sucursal`);
+    return handleResponse<RespuestaReservasSucursal>(res);
+  },
+
+  async contarReservasPendientes(): Promise<ConteoReservasPendientes> {
+    const res = await solicitar(`${this.baseUrl}/reservas/sucursal/pendientes`);
+    return handleResponse<ConteoReservasPendientes>(res);
+  },
+
+  async obtenerDetalleReservaSucursal(idReserva: number): Promise<DetalleReservaSucursal> {
+    const res = await solicitar(`${this.baseUrl}/reservas/sucursal/${idReserva}`);
+    return handleResponse<DetalleReservaSucursal>(res);
+  },
+
+  // CU31 - Confirmar Recepción del Cliente en el Vestidor
+  async prepararReserva(idReserva: number): Promise<TransicionReservaResultado> {
+    const res = await solicitar(`${this.baseUrl}/reservas/${idReserva}/preparar`, { method: 'PATCH' });
+    return handleResponse<TransicionReservaResultado>(res);
+  },
+
+  async confirmarRecepcionReserva(idReserva: number): Promise<TransicionReservaResultado> {
+    const res = await solicitar(`${this.baseUrl}/reservas/${idReserva}/confirmar-recepcion`, { method: 'PATCH' });
+    return handleResponse<TransicionReservaResultado>(res);
+  },
+
+  async finalizarAtencionReserva(idReserva: number): Promise<FinalizarReservaResultado> {
+    const res = await solicitar(`${this.baseUrl}/reservas/${idReserva}/finalizar`, { method: 'PATCH' });
+    return handleResponse<FinalizarReservaResultado>(res);
+  },
+
+  // CU32 - Usar Vestidor Virtual con Realidad Aumentada
+  async crearSesionRa(body: {
+    id_ptc: number;
+    medidas_avatar?: string;
+    foto_resultado?: string;
+    id_reserva?: number | null;
+    id_carrito?: number | null;
+  }): Promise<RespuestaSesionRa> {
+    const res = await solicitar(`${this.baseUrl}/sesiones-ra`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return handleResponse<RespuestaSesionRa>(res);
+  },
+
+  async registrarResultadoRa(
+    idSesionRa: number,
+    resultado: 'Gusta' | 'No gusta',
+  ): Promise<RespuestaResultadoRa> {
+    const res = await solicitar(`${this.baseUrl}/sesiones-ra/${idSesionRa}/resultado`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resultado }),
+    });
+    return handleResponse<RespuestaResultadoRa>(res);
+  },
+
+  async listarHistorialRa(): Promise<{ total: number; items: HistorialSesionRaItem[] }> {
+    const res = await solicitar(`${this.baseUrl}/sesiones-ra/historial`);
+    return handleResponse<{ total: number; items: HistorialSesionRaItem[] }>(res);
+  },
+
+  // CU33 - Carrito de compras
+  async consultarCarrito(): Promise<CarritoRespuesta> {
+    const res = await solicitar(`${this.baseUrl}/carrito`, {
+      headers: headersConTokenInvitado(),
+    });
+    const resp = await handleResponse<CarritoRespuesta>(res);
+    guardarTokenInvitado(resp.token_invitado);
+    return resp;
+  },
+
+  async agregarAlCarrito(body: {
+    id_ptc: number;
+    cantidad: number;
+    id_sucursal: number;
+  }): Promise<RespuestaAgregarCarrito> {
+    const res = await solicitar(`${this.baseUrl}/carrito/items`, {
+      method: 'POST',
+      headers: headersConTokenInvitado({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(body),
+    });
+    const resp = await handleResponse<RespuestaAgregarCarrito>(res);
+    guardarTokenInvitado(resp.token_invitado);
+    return resp;
+  },
+
+  async actualizarCantidadCarrito(
+    idCarritoItem: number,
+    cantidad: number,
+  ): Promise<CarritoRespuesta> {
+    const res = await solicitar(`${this.baseUrl}/carrito/items/${idCarritoItem}`, {
+      method: 'PATCH',
+      headers: headersConTokenInvitado({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ cantidad }),
+    });
+    return handleResponse<CarritoRespuesta>(res);
+  },
+
+  async quitarItemCarrito(idCarritoItem: number): Promise<CarritoRespuesta> {
+    const res = await solicitar(`${this.baseUrl}/carrito/items/${idCarritoItem}`, {
+      method: 'DELETE',
+      headers: headersConTokenInvitado(),
+    });
+    return handleResponse<CarritoRespuesta>(res);
+  },
+
+  // CU34 - Realizar Compra Digital
+  async checkout(body: {
+    id_carrito: number;
+    id_sucursal?: number;
+    modalidad: 'Retiro' | 'Entrega';
+    metodo_pago: 'Tarjeta' | 'QR' | 'Transferencia';
+    nit_cliente?: string | null;
+    razon_social?: string | null;
+  }): Promise<RespuestaCheckout> {
+    const res = await solicitar(`${this.baseUrl}/ventas/checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return handleResponse<RespuestaCheckout>(res);
+  },
+
+  // CU36 - Registrar Venta Presencial en Punto de Caja (POS)
+  async buscarProductosPos(busqueda?: string): Promise<
+    Array<{
+      id_ptc: number;
+      id_producto: number;
+      codigo: string | null;
+      nombre: string | null;
+      talla: string | null;
+      color: string | null;
+      precio_unitario: number;
+      porcentaje_iva: number;
+      cantidad_disponible: number;
+    }>
+  > {
+    const params = new URLSearchParams();
+    if (busqueda && busqueda.trim()) params.set('busqueda', busqueda.trim());
+    const qs = params.toString();
+    const res = await solicitar(`${this.baseUrl}/pos/productos${qs ? `?${qs}` : ''}`);
+    return handleResponse(res);
+  },
+
+  async buscarClientesPos(busqueda?: string): Promise<
+    Array<{
+      id_cliente: number;
+      nombre: string;
+      email: string | null;
+      ci: string | null;
+      telefono: string | null;
+    }>
+  > {
+    const params = new URLSearchParams();
+    if (busqueda && busqueda.trim()) params.set('busqueda', busqueda.trim());
+    const qs = params.toString();
+    const res = await solicitar(`${this.baseUrl}/pos/clientes${qs ? `?${qs}` : ''}`);
+    return handleResponse(res);
+  },
+
+  async crearVentaPresencial(body: {
+    items: Array<{ id_ptc: number; cantidad: number }>;
+    id_cliente?: number | null;
+    metodo_pago: 'Efectivo' | 'Tarjeta' | 'QR' | 'Transferencia';
+    nit_cliente?: string | null;
+    razon_social?: string | null;
+  }): Promise<{
+    id_venta: number;
+    total: number;
+    estado: 'Pendiente';
+    items: Array<{ id_ptc: number; cantidad: number; precio_unitario: number }>;
+  }> {
+    const res = await solicitar(`${this.baseUrl}/ventas/presencial`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return handleResponse(res);
+  },
+
+// CU35 - Procesar Pago con Pasarela de Pago
+  // CU37 - Procesar Pago en Caja
+  async procesarPagoCaja(body: {
+    id_venta: number;
+    metodo_pago: 'Efectivo' | 'Tarjeta' | 'QR' | 'Transferencia';
+    monto_recibido?: number | null;
+    proveedor_pasarela?: 'LIBELULA' | 'STRIPE' | null;
+  }): Promise<
+    | {
+        id_venta: number;
+        estado: 'Completada';
+        metodo_pago: 'Efectivo';
+        monto: number;
+        vuelto: number;
+        numero_comprobante: string;
+      }
+    | {
+        id_venta: number;
+        id_transaccion: number;
+        terminal_url: string;
+        id_transaccion_pasarela: string;
+        estado: 'Pendiente';
+        metodo_pago: 'Tarjeta' | 'QR' | 'Transferencia';
+        monto: number;
+      }
+  > {
+    const res = await solicitar(`${this.baseUrl}/pagos/caja`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return handleResponse(res);
+  },
+
+  async crearTransaccion(body: {
+    id_venta: number;
+    metodo: 'Tarjeta' | 'QR' | 'Transferencia';
+    proveedor_pasarela: 'LIBELULA' | 'STRIPE' | 'PAYPAL';
+  }): Promise<{
+    id_transaccion: number;
+    checkout_url: string;
+    id_transaccion_pasarela: string;
+    estado: 'Pendiente';
+    monto: number;
+  }> {
+    const res = await solicitar(`${this.baseUrl}/pagos/transacciones`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return handleResponse(res);
+  },
+
+  async consultarEstadoTransaccion(idTransaccion: number): Promise<{
+    id_transaccion: number;
+    estado: 'Pendiente' | 'Aprobado' | 'Rechazado';
+    monto: number;
+    moneda: string;
+    metodo: string | null;
+    proveedor_pasarela: string | null;
+    detalle: string | null;
+    firma: string;
+  }> {
+    const res = await solicitar(`${this.baseUrl}/pagos/transacciones/${idTransaccion}/estado`);
+    return handleResponse(res);
+  },
+
+  async simularPasarela(body: {
+    id_transaccion: number;
+    resultado: 'Aprobado' | 'Rechazado' | 'no_responde';
+    detalle?: string | null;
+  }): Promise<{
+    id_transaccion: number;
+    estado: 'Pendiente' | 'Aprobado' | 'Rechazado';
+    monto: number;
+    moneda: string;
+    detalle: string | null;
+    reprocesado: boolean;
+  }> {
+    const res = await solicitar(`${this.baseUrl}/pagos/sandbox/gateway`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return handleResponse(res);
+  },
+
+  // CU38 - Emitir Comprobante de Venta
+  async consultarComprobanteVenta(idVenta: number): Promise<{
+    id_comprobante: number;
+    id_venta: number;
+    numero: string;
+    tipo: string;
+    nit_cliente: string | null;
+    razon_social: string | null;
+    total: number;
+    fecha_emision: string;
+    pdf_url: string | null;
+  }> {
+    const res = await solicitar(`${this.baseUrl}/ventas/${idVenta}/comprobante`);
+    return handleResponse(res);
+  },
+
+  async obtenerComprobantePdfBlob(idComprobante: number): Promise<Blob> {
+    const res = await solicitar(`${this.baseUrl}/comprobantes/${idComprobante}/pdf`);
+    if (!res.ok) {
+      const detalle = (await res.json().catch(() => null)) as { message?: string } | null;
+      throw new Error(detalle?.message ?? 'No se pudo descargar el comprobante.');
+    }
+    return res.blob();
+  },
+
+  async descargarComprobantePdf(idComprobante: number): Promise<void> {
+    const blob = await this.obtenerComprobantePdfBlob(idComprobante);
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = `comprobante-${idComprobante}.pdf`;
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
+    URL.revokeObjectURL(url);
+  },
+
+  async abrirComprobantePdf(idComprobante: number): Promise<void> {
+    const blob = await this.obtenerComprobantePdfBlob(idComprobante);
+    const url = URL.createObjectURL(blob);
+    const ventana = window.open(url, '_blank');
+    if (!ventana) {
+      URL.revokeObjectURL(url);
+      throw new Error('El navegador bloqueó la ventana. Permite las ventanas emergentes.');
+    }
+  },
+
+  async misCompras(): Promise<CompraListaItem[]> {
+    const res = await solicitar(`${this.baseUrl}/ventas/mias/compras`);
+    return handleResponse(res);
+  },
+
+  // CU41 - Recomendar Prendas con IA
+  async obtenerRecomendaciones(): Promise<RespuestaRecomendaciones> {
+    const res = await solicitar(`${this.baseUrl}/recomendaciones`);
+    return handleResponse<RespuestaRecomendaciones>(res);
+  },
+
+  // CU43 - Generar Reporte por Comando de Voz (IA)
+  async generarReporteVoz(audio?: Blob, texto?: string): Promise<RespuestaReporteVoz> {
+    const formData = new FormData();
+    if (audio) formData.append('audio', audio);
+    if (texto) formData.append('texto', texto || '');
+
+    const res = await solicitar(`${this.baseUrl}/reportes/voz`, {
+      method: 'POST',
+      body: formData,
+    });
+    return handleResponse<RespuestaReporteVoz>(res);
+  },
+}
+
+export type CompraListaItem = {
+  id_venta: number;
+  id_sucursal: number;
+  modalidad: string;
+  metodo_pago: string | null;
+  subtotal: number;
+  impuestos: number;
+  total: number;
+  estado: string;
+  fecha_venta: string;
+  comprobante_numero: string | null;
+  id_comprobante: number | null;
+  comprobante_tipo: string | null;
+  comprobante_pdf_url: string | null;
+};
+
+// CU41 - Recomendar Prendas con IA
+export interface ItemRecomendacion {
+  id_ptc: number;
+  producto: {
+    id_producto: number;
+    codigo: string;
+    nombre: string;
+    descripcion: string | null;
+    categoria: string | null;
+  };
+  talla: string;
+  color: string;
+  codigo_hex: string | null;
+  precio: number;
+  imagen: string | null;
+  score: number;
+  motivo: string;
+}
+
+export interface RespuestaRecomendaciones {
+  items: ItemRecomendacion[];
+  fuente: string;
+}
+
+export interface RespuestaReporteVoz {
+  id_reporte: number;
+  url_archivo: string;
+  resumen: string;
 }

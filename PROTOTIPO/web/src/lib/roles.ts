@@ -10,3 +10,9 @@ export function esPersonal(usuario: UsuarioSesion | null): boolean {
 export function esAdmin(usuario: UsuarioSesion | null): boolean {
   return usuario?.rol === 'Administrador';
 }
+
+export function esCliente(usuario: UsuarioSesion | null): boolean {
+  if (!usuario) return false;
+  const permisos = (usuario.permisos ?? []) as string[];
+  return permisos.includes('gestionar_reservas') && !esPersonal(usuario);
+}

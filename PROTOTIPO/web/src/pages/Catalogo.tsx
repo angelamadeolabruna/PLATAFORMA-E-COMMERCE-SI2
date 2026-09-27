@@ -2,12 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
+  CalendarClock,
   ChevronRight,
   FilterX,
   Loader2,
   PackageX,
   RefreshCw,
+  ScanLine,
   Search,
+  ShoppingCart,
   SlidersHorizontal,
 } from 'lucide-react';
 import {
@@ -21,6 +24,12 @@ import { Button } from '@/components/ui/Button.js';
 import { Card } from '@/components/ui/Card.js';
 import { Skeleton } from '@/components/ui/Skeleton.js';
 import { cn } from '@/lib/utils.js';
+import { useAuth } from '@/contexts/AuthContext.js';
+import { useCart } from '@/contexts/CartContext.js';
+import { leerIntencionReserva, limpiarIntencionReserva, type InicialReserva } from '@/lib/reservas.js';
+import { ModalReserva, type ProductoParaReserva } from '@/components/reserva/ModalReserva.js';
+import { hexDeColor, esColorClaro, resolverImagenProducto } from '@/lib/productoMedia.js';
+import { VestidorRa, type PrendaVestidorRa } from '@/components/ra/VestidorRa.js';
 
 const LIMITE = 20;
 
@@ -32,18 +41,77 @@ function Precio({ valor }: { valor: number }) {
   );
 }
 
-function TarjetaPrenda({ item }: { item: ItemCatalogoPublico }) {
+function tienePermisoVenta(usuario: { permisos?: unknown[] } | null): boolean {
+  if (!usuario) return false;
+  const permisos = (usuario.permisos ?? []) as string[];
+  return permisos.includes('*') || permisos.includes('realizar_venta');
+}
+
+function TarjetaPrenda({
+  item,
+  onReservar,
+  onProbarVestidor,
+}: {
+  item: ItemCatalogoPublico;
+  onReservar: (item: ItemCatalogoPublico) => void;
+  onProbarVestidor: (item: ItemCatalogoPublico) => void;
+}) {
+  const [colorHover, setColorHover] = useState<string | null>(null);
+  const [agregando, setAgregando] = useState(false);
+  const [errorAgregar, setErrorAgregar] = useState<string | null>(null);
+  const { usuario } = useAuth();
+  const { agregar } = useCart();
+
+  const imagenMostrada = useMemo(() => {
+    return resolverImagenProducto({
+      codigo: item.codigo,
+      nombre: item.nombre,
+      colorSeleccionado: colorHover || undefined,
+      imagenPrincipal: item.imagen_principal,
+    });
+  }, [item, colorHover]);
+
+  const agregarAlCarrito = async () => {
+    setErrorAgregar(null);
+    setAgregando(true);
+    try {
+      const disp = await api.consultarDisponibilidad(item.codigo);
+      const sucursal = disp.sucursales.find((s) => s.lineas.length > 0);
+      const linea = sucursal?.lineas.find((l) => l.disponible > 0);
+      if (!sucursal || !linea) {
+        setErrorAgregar('No hay stock disponible de esta prenda.');
+        return;
+      }
+      await agregar({
+        id_ptc: linea.id_ptc,
+        cantidad: 1,
+        id_sucursal: sucursal.id_sucursal,
+      });
+    } catch (err) {
+      const msg =
+        err instanceof ApiError && err.status === 401
+          ? 'Inicia sesión para agregar al carrito.'
+          : err instanceof Error
+            ? err.message
+            : 'No se pudo agregar la prenda al carrito.';
+      setErrorAgregar(msg);
+    } finally {
+      setAgregando(false);
+    }
+  };
+
   return (
-    <Card className="group flex flex-col overflow-hidden transition-shadow hover:shadow-card-hover">
+    <Card className="group flex flex-col overflow-hidden rounded-2xl border border-ink-100 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-card-hover">
+      {/* Product Image Stage */}
       <Link
         to={`/productos/${encodeURIComponent(item.codigo)}`}
-        className="flex h-44 items-center justify-center overflow-hidden bg-ink-50"
+        className="relative flex aspect-[4/5] w-full items-center justify-center overflow-hidden bg-gradient-to-b from-neutral-50 via-slate-50 to-neutral-100/70 p-4"
       >
-        {item.imagen_principal ? (
+        {imagenMostrada ? (
           <img
-            src={item.imagen_principal}
+            src={imagenMostrada}
             alt={item.nombre}
-            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+            className="h-full w-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105 select-none"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = 'none';
             }}
@@ -51,45 +119,115 @@ function TarjetaPrenda({ item }: { item: ItemCatalogoPublico }) {
         ) : (
           <span className="text-6xl opacity-50">🧥</span>
         )}
+
+        {/* Floating Category Badge */}
+        {item.categoria && (
+          <Badge variant="brand" className="absolute top-3 left-3 shadow-xs">
+            {item.categoria}
+          </Badge>
+        )}
+
+        {/* Floating Color Tag */}
+        <span className="absolute bottom-3 right-3 rounded-full bg-white/90 px-2.5 py-0.5 text-[10px] font-bold text-ink-700 shadow-xs backdrop-blur border border-ink-100">
+          {colorHover ? `Color: ${colorHover}` : 'Tiendas Montaño'}
+        </span>
       </Link>
 
       <div className="flex flex-1 flex-col gap-2.5 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="line-clamp-1 text-base font-bold text-ink-900 transition group-hover:text-brand-700">
-              {item.nombre}
-            </p>
-            <p className="mt-0.5 text-xs text-ink-400">{item.codigo}</p>
-          </div>
-          {item.categoria && <Badge variant="brand">{item.categoria}</Badge>}
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-ink-400">{item.codigo}</p>
+          <Link
+            to={`/productos/${encodeURIComponent(item.codigo)}`}
+            className="line-clamp-1 text-base font-bold text-ink-900 transition hover:text-brand-700"
+          >
+            {item.nombre}
+          </Link>
         </div>
 
         <Precio valor={item.precio_con_iva} />
 
-        <div className="mt-auto flex flex-wrap items-center gap-3 text-xs text-ink-600">
-          {item.tallas.length > 0 && (
-            <span className="line-clamp-1">
-              <span className="font-semibold text-ink-500">Tallas:</span> {item.tallas.join(', ')}
-            </span>
-          )}
+        {/* Swatches & Sizes */}
+        <div className="mt-auto flex flex-col gap-2 border-t border-ink-50 pt-2.5 text-xs text-ink-600">
+          {/* Color Swatches */}
           {item.colores.length > 0 && (
-            <span className="flex items-center gap-1.5">
-              {item.colores.slice(0, 4).map((c) => (
-                <span key={c} className="flex items-center gap-1">
-                  <span className="h-3 w-3 rounded-full border border-ink-200" />
-                  {c}
-                </span>
-              ))}
-              {item.colores.length > 4 && <span>+{item.colores.length - 4}</span>}
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-ink-400">Colores:</span>
+              <div className="flex items-center gap-1.5">
+                {item.colores.map((c) => {
+                  const hex = hexDeColor(c);
+                  const activo = colorHover === c;
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onMouseEnter={() => setColorHover(c)}
+                      onClick={() => setColorHover(c)}
+                      title={`Ver en color ${c}`}
+                      className={cn(
+                        'h-4 w-4 rounded-full border transition-transform cursor-pointer',
+                        esColorClaro(hex) ? 'border-ink-300' : 'border-black/15',
+                        activo ? 'ring-2 ring-brand-600 ring-offset-1 scale-110' : 'hover:scale-110',
+                      )}
+                      style={{ backgroundColor: hex }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Tallas */}
+          {item.tallas.length > 0 && (
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-ink-400">Tallas:</span>
+              <div className="flex items-center gap-1">
+                {item.tallas.map((t) => (
+                  <span
+                    key={t}
+                    className="inline-flex min-w-[20px] items-center justify-center rounded bg-ink-50 px-1.5 py-0.5 text-[10px] font-bold text-ink-700 border border-ink-100"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 
-        <Link to={`/productos/${encodeURIComponent(item.codigo)}`} className="mt-2">
-          <Button size="sm" className="w-full">
-            Ver detalle <ChevronRight size={15} />
+        <div className="mt-2 flex flex-col gap-2">
+          {(usuario === null || tienePermisoVenta(usuario)) && (
+            <>
+              <Button
+                size="sm"
+                variant="accent"
+                loading={agregando}
+                className="w-full font-bold shadow-xs"
+                onClick={() => void agregarAlCarrito()}
+              >
+                <ShoppingCart size={15} /> Agregar al carrito
+              </Button>
+              {errorAgregar && (
+                <p className="text-center text-[11px] font-medium text-danger-600">{errorAgregar}</p>
+              )}
+            </>
+          )}
+          <Button size="sm" className="w-full font-bold shadow-xs" onClick={() => onReservar(item)}>
+            <CalendarClock size={15} /> Reservar para probar
           </Button>
-        </Link>
+          <Button
+            size="sm"
+            variant="accent"
+            className="w-full font-bold shadow-xs"
+            onClick={() => onProbarVestidor(item)}
+          >
+            <ScanLine size={15} /> Probar en vestidor
+          </Button>
+          <Link to={`/productos/${encodeURIComponent(item.codigo)}`} className="w-full">
+            <Button size="sm" variant="secondary" className="w-full text-xs font-semibold">
+              Ver detalles y tiendas <ChevronRight size={15} />
+            </Button>
+          </Link>
+        </div>
       </div>
     </Card>
   );
@@ -112,8 +250,93 @@ export function Catalogo() {
   const [error, setError] = useState<string | null>(null);
   const [errorFiltro, setErrorFiltro] = useState<string | null>(null);
 
+  const [productoReserva, setProductoReserva] = useState<ProductoParaReserva | null>(null);
+  const [inicialReserva, setInicialReserva] = useState<InicialReserva | undefined>();
+  const [modalAbierto, setModalAbierto] = useState(false);
+
+  const [prendaVestidor, setPrendaVestidor] = useState<PrendaVestidorRa | null>(null);
+  const [vestidorAbierto, setVestidorAbierto] = useState(false);
+  const [errorVestidor, setErrorVestidor] = useState<string | null>(null);
+  const [itemVestidor, setItemVestidor] = useState<ItemCatalogoPublico | null>(null);
+
   const paginaCargada = useRef(0);
   const busquedaDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intencionRestaurada = useRef(false);
+
+  const abrirReserva = useCallback((item: ItemCatalogoPublico, inicial?: InicialReserva) => {
+    setProductoReserva({
+      id_producto: item.id_producto,
+      codigo: item.codigo,
+      nombre: item.nombre,
+      precio: item.precio_con_iva,
+    });
+    setInicialReserva(inicial);
+    setModalAbierto(true);
+  }, []);
+
+  const cerrarReserva = useCallback(() => {
+    setModalAbierto(false);
+    setProductoReserva(null);
+    setInicialReserva(undefined);
+  }, []);
+
+  const probarVestidor = useCallback(async (item: ItemCatalogoPublico) => {
+    setErrorVestidor(null);
+    try {
+      const disp = await api.consultarDisponibilidad(item.codigo);
+      const lineas = disp.sucursales.flatMap((s) => s.lineas);
+      const linea =
+        lineas.find((l) => l.disponible > 0 && l.talla && l.color) ??
+        lineas.find((l) => l.talla && l.color);
+      if (!linea) {
+        setErrorVestidor(`No se pudo abrir el vestidor: ${item.nombre} no tiene tallas/colores con stock.`);
+        return;
+      }
+      setItemVestidor(item);
+      setPrendaVestidor({
+        id_ptc: linea.id_ptc,
+        codigo: item.codigo,
+        nombre: item.nombre,
+        imagen: resolverImagenProducto({
+          codigo: item.codigo,
+          nombre: item.nombre,
+          colorSeleccionado: linea.color,
+          imagenPrincipal: item.imagen_principal,
+        }),
+        talla: linea.talla,
+        color: linea.color,
+        modelo_3d_url: disp.producto.modelo_3d_url,
+      });
+      setVestidorAbierto(true);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'No se pudo abrir el vestidor virtual.';
+      setErrorVestidor(msg);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (intencionRestaurada.current) return;
+    const intencion = leerIntencionReserva();
+    if (!intencion) return;
+    const retornoPath = intencion.retorno.split('?')[0] ?? '';
+    if (retornoPath !== '/catalogo' && retornoPath !== '/') return;
+    intencionRestaurada.current = true;
+    setProductoReserva({
+      id_producto: intencion.id_producto,
+      codigo: intencion.codigo,
+      nombre: intencion.nombre,
+      precio: intencion.precio,
+    });
+    setInicialReserva({
+      talla: intencion.talla,
+      color: intencion.color,
+      cantidad: intencion.cantidad,
+      id_sucursal: intencion.id_sucursal,
+      fecha: intencion.fecha,
+      hora: intencion.hora,
+    });
+    setModalAbierto(true);
+  }, []);
 
   const cargarOpciones = useCallback(async () => {
     try {
@@ -411,7 +634,12 @@ export function Catalogo() {
               </p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {items.map((item) => (
-                  <TarjetaPrenda key={item.id_producto} item={item} />
+                  <TarjetaPrenda
+                    key={item.id_producto}
+                    item={item}
+                    onReservar={(it) => abrirReserva(it)}
+                    onProbarVestidor={(it) => void probarVestidor(it)}
+                  />
                 ))}
               </div>
               {items.length < total && (
@@ -431,6 +659,43 @@ export function Catalogo() {
           )}
         </section>
       </div>
+
+      <ModalReserva
+        abierto={modalAbierto}
+        producto={productoReserva}
+        inicial={inicialReserva}
+        onCerrar={() => {
+          limpiarIntencionReserva();
+          cerrarReserva();
+        }}
+      />
+
+      {errorVestidor && (
+        <Card className="mb-4 border-danger-200 bg-danger-50">
+          <div className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-danger-700">
+            <AlertTriangle size={16} className="shrink-0" />
+            {errorVestidor}
+          </div>
+        </Card>
+      )}
+
+      <VestidorRa
+        abierto={vestidorAbierto}
+        prenda={prendaVestidor}
+        onCerrar={() => {
+          setVestidorAbierto(false);
+          setPrendaVestidor(null);
+          setItemVestidor(null);
+        }}
+        onReservar={(prenda) => {
+          setVestidorAbierto(false);
+          setPrendaVestidor(null);
+          if (itemVestidor) {
+            abrirReserva(itemVestidor, { talla: prenda.talla, color: prenda.color });
+          }
+          setItemVestidor(null);
+        }}
+      />
     </div>
   );
 }

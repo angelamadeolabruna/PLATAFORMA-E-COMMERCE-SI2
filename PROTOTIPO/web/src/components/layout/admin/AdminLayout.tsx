@@ -41,9 +41,39 @@ function SidebarBody({ alNavegar }: { alNavegar: () => void }) {
     };
   }, [usuario?.permisos]);
 
+  const [nReservasPend, setNReservasPend] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!tokenPuedeReservas()) return;
+    let activo = true;
+
+    const refrescar = () => {
+      api
+        .contarReservasPendientes()
+        .then((res) => {
+          if (activo) setNReservasPend(res.total);
+        })
+        .catch(() => {
+          if (activo) setNReservasPend(null);
+        });
+    };
+
+    refrescar();
+    const intervalo = setInterval(refrescar, 30_000);
+    return () => {
+      activo = false;
+      clearInterval(intervalo);
+    };
+  }, [usuario?.permisos]);
+
   function tokenPuedeAlertas(): boolean {
     const p = (usuario?.permisos ?? []) as string[];
     return Boolean(usuario) && (p.includes('*') || p.includes('gestionar_inventario'));
+  }
+
+  function tokenPuedeReservas(): boolean {
+    const p = (usuario?.permisos ?? []) as string[];
+    return Boolean(usuario) && (p.includes('*') || p.includes('gestionar_reservas'));
   }
 
   const paquetesVisibles = PAQUETES_ADMIN.filter((paquete) => paquete.items.some(permitido));
@@ -92,6 +122,11 @@ function SidebarBody({ alNavegar }: { alNavegar: () => void }) {
                           {item.ruta === '/admin/inventario/alertas' && nAlertas != null && nAlertas > 0 && (
                             <span className="rounded-full bg-danger-600 px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none text-white">
                               {nAlertas}
+                            </span>
+                          )}
+                          {item.ruta === '/admin/reservas' && nReservasPend != null && nReservasPend > 0 && (
+                            <span className="rounded-full bg-danger-600 px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none text-white">
+                              {nReservasPend}
                             </span>
                           )}
                         </span>

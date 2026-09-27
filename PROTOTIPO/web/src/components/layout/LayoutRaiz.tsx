@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { Navbar } from './Navbar.js';
 import { Footer } from './Footer.js';
+import { CartPanel } from '@/components/carrito/CartPanel.js';
 
 export function LayoutRaiz() {
   return (
@@ -10,6 +11,7 @@ export function LayoutRaiz() {
         <Outlet />
       </main>
       <Footer />
+      <CartPanel />
     </div>
   );
 }

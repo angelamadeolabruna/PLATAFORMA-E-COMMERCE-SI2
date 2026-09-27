@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, ShoppingCart, User, Menu, X, LogOut, LayoutDashboard } from 'lucide-react';
+import { Search, ShoppingCart, User, Menu, X, LogOut, LayoutDashboard, CalendarCheck, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext.js';
-import { esPersonal } from '@/lib/roles.js';
+import { useCart } from '@/contexts/CartContext.js';
+import { esPersonal, esCliente } from '@/lib/roles.js';
 import { cn } from '@/lib/utils.js';
 import logoUrl from '@/assets/logo.png';
+import { PAQUETES_CLIENTE, type ItemMenuCliente } from '@/data/clienteMenu.js';
 
 export function Logo({ className }: { className?: string }) {
   return (
@@ -19,8 +21,113 @@ export function Logo({ className }: { className?: string }) {
   );
 }
 
+function tienePermisoVenta(usuario: { permisos?: unknown[] }): boolean {
+  const permisos = (usuario.permisos ?? []) as string[];
+  return permisos.includes('*') || permisos.includes('realizar_venta');
+}
+
+type UsuarioMenu = { permisos?: unknown[]; nombre?: string | null; email?: string | null; rol?: string | null } | null;
+
+function MenuCuenta({ usuario, logout }: { usuario: UsuarioMenu; logout: () => void }) {
+  const [abierto, setAbierto] = useState(false);
+
+  const permisos = (usuario?.permisos ?? []) as string[];
+  const permitido = (item: ItemMenuCliente) =>
+    permisos.includes('*') || (item.permiso ? permisos.includes(item.permiso) : true);
+
+  const paquetesVisibles = PAQUETES_CLIENTE.filter((paquete) => paquete.items.some(permitido));
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        className="flex items-center gap-2 rounded-xl p-2.5 text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-900"
+        onClick={() => setAbierto((v) => !v)}
+        aria-label={usuario ? 'Mi cuenta' : 'Cuenta'}
+        aria-expanded={abierto}
+      >
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700">
+          {(usuario?.nombre ?? usuario?.email ?? 'U').charAt(0).toUpperCase()}
+        </span>
+        <span className="hidden lg:block text-sm font-semibold text-ink-800 truncate max-w-36">
+          {usuario?.nombre ?? usuario?.email ?? 'Mi Cuenta'}
+        </span>
+        <ChevronDown size={16} className={cn('text-ink-500 transition-transform', abierto && 'rotate-180')} />
+      </button>
+
+      {abierto && (
+        <div className="absolute right-0 mt-2 w-64 origin-top-right animate-in fade-in-0 zoom-in-95">
+          <div className="rounded-xl border border-ink-100 bg-white py-1.5 shadow-pop ring-1 ring-ink-100">
+            {paquetesVisibles.map((paquete) => (
+              <div key={paquete.id} className="py-1">
+                <p className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-ink-400">
+                  {paquete.titulo}
+                </p>
+                <ul className="flex flex-col gap-0.5">
+                  {paquete.items.filter(permitido).map((item) => (
+                    <li key={item.ruta}>
+                      <Link
+                        to={item.ruta}
+                        onClick={() => setAbierto(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-ink-600 hover:bg-ink-100 hover:text-ink-900 transition"
+                      >
+                        <span className="shrink-0">
+                          <item.icono size={18} className="text-ink-400" />
+                        </span>
+                        <span className="flex-1 leading-tight">{item.etiqueta}</span>
+                        <span className="rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold bg-success-50 text-success-700">
+                          {item.cu}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+            <hr className="my-1.5 border-ink-100" />
+            {usuario ? (
+              <>
+                <div className="px-3 py-1">
+                  <p className="text-xs text-ink-500 truncate max-w-full">{usuario?.nombre ?? usuario?.email}</p>
+                  <p className="text-[11px] text-ink-400 capitalize">{usuario?.rol ?? 'Cliente'}</p>
+                </div>
+                <button
+                  onClick={() => void logout()}
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-medium text-danger-600 hover:bg-danger-50 transition-colors"
+                >
+                  <LogOut size={18} />
+                  Cerrar sesión
+                </button>
+              </>
+            ) : (
+              <div className="px-3 py-2 space-y-2">
+                <Link
+                  to="/login"
+                  onClick={() => setAbierto(false)}
+                  className="flex w-full items-center justify-center gap-2 px-3 py-2.5 text-sm font-semibold text-brand-600 hover:bg-brand-50 transition-colors rounded-lg"
+                >
+                  <User size={19} />
+                  Ingresar
+                </Link>
+                <Link
+                  to="/registro"
+                  onClick={() => setAbierto(false)}
+                  className="flex w-full items-center justify-center gap-2 px-3 py-2.5 text-sm font-semibold text-brand-600 hover:bg-brand-50 transition-colors rounded-lg border border-brand-200"
+                >
+                  Registrarse
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Navbar() {
   const { usuario, logout } = useAuth();
+  const { totalCantidad, abrirPanel } = useCart();
   const navigate = useNavigate();
   const [busqueda, setBusqueda] = useState('');
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -32,11 +139,6 @@ export function Navbar() {
     e.preventDefault();
     const q = busqueda.trim();
     navigate(q ? `/productos?q=${encodeURIComponent(q)}` : '/productos');
-  }
-
-  function handleSalir() {
-    void logout();
-    navigate('/');
   }
 
   return (
@@ -94,47 +196,29 @@ export function Navbar() {
             </Link>
           )}
 
-          <Link
-            to="/carrito"
-            className="relative rounded-xl p-2.5 text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-900"
-            aria-label="Carrito de compras"
-          >
-            <ShoppingCart size={22} />
-            <span className="absolute top-1 right-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-accent-500 px-1 text-[11px] leading-none font-bold text-ink-950">
-              0
-            </span>
-          </Link>
-
-          {usuario ? (
-            <div className="ml-1 hidden items-center gap-2 sm:flex">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700">
-                {(usuario.nombre ?? usuario.email)[0]?.toUpperCase()}
-              </span>
-              <div className="hidden lg:block">
-                <p className="max-w-40 truncate text-sm font-semibold text-ink-800">{usuario.nombre ?? usuario.email}</p>
-                <p className="text-xs capitalize text-ink-500">{usuario.rol ?? 'cliente'}</p>
-              </div>
-            </div>
-          ) : (
-            <Link
-              to="/login"
-              className="ml-1 hidden items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:bg-ink-50 sm:flex"
-            >
-              <User size={19} />
-              Ingresar
-            </Link>
-          )}
-
-          {usuario && (
+          {(usuario === null || tienePermisoVenta(usuario)) && (
             <button
-              onClick={handleSalir}
-              className="rounded-xl p-2.5 text-ink-500 transition-colors hover:bg-ink-50 hover:text-danger-600 sm:ml-1"
-              title="Cerrar sesión"
-              aria-label="Cerrar sesión"
+              type="button"
+              onClick={() => {
+                if (!usuario) {
+                  navigate('/login');
+                  return;
+                }
+                abrirPanel();
+              }}
+              className="relative rounded-xl p-2.5 text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-900"
+              aria-label="Carrito de compras"
             >
-              <LogOut size={20} />
+              <ShoppingCart size={22} />
+              {totalCantidad > 0 && (
+                <span className="absolute top-1 right-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-accent-500 px-1 text-[11px] leading-none font-bold text-ink-950">
+                  {totalCantidad}
+                </span>
+              )}
             </button>
           )}
+
+          <MenuCuenta usuario={usuario} logout={logout} />
 
           <button
             className="rounded-xl p-2.5 text-ink-600 hover:bg-ink-50 lg:hidden"
@@ -165,6 +249,16 @@ export function Navbar() {
             >
               <LayoutDashboard size={18} />
               Panel de administración
+            </Link>
+          )}
+          {esCliente(usuario) && (
+            <Link
+              to="/reservas"
+              onClick={() => setMenuAbierto(false)}
+              className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-ink-950 px-4 py-3 text-sm font-semibold text-white"
+            >
+              <CalendarCheck size={18} />
+              Mis Reservas
             </Link>
           )}
         </div>

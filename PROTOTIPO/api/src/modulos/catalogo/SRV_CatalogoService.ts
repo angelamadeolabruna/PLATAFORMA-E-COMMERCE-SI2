@@ -3,6 +3,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
 export interface LineaDisponibilidad {
+  id_ptc: number;
   talla: string;
   color: string;
   codigo_hex: string | null;
@@ -20,6 +21,13 @@ export interface SucursalDisponibilidad {
   lineas: LineaDisponibilidad[];
 }
 
+export interface ImagenProductoPublica {
+  url: string;
+  es_principal: boolean;
+  color: string | null;
+  codigo_hex: string | null;
+}
+
 export interface ConsultaDisponibilidad {
   producto: {
     id_producto: number;
@@ -29,9 +37,11 @@ export interface ConsultaDisponibilidad {
     precio: number;
     categoria: string | null;
     imagen_principal: string | null;
+    modelo_3d_url: string | null;
   };
+  imagenes?: ImagenProductoPublica[];
   tallas: Array<{ nombre: string }>;
-  colores: Array<{ nombre: string; codigo_hex: string | null }>;
+  colores: Array<{ nombre: string; codigo_hex: string | null; imagen_url?: string | null }>;
   sucursales: SucursalDisponibilidad[];
 }
 
@@ -73,6 +83,7 @@ interface FilaDisponibilidad {
   direccion: string;
   telefono: string | null;
   ciudad: string;
+  id_ptc: number;
   talla: string;
   talla_orden: string;
   color: string;
@@ -91,6 +102,7 @@ export class CatalogoService {
   async consultarDisponibilidad(codigo: string): Promise<ConsultaDisponibilidad> {
     const [producto] = (await this.dataSource.query(
       `SELECT p.id_producto, p.codigo, p.nombre, p.descripcion, p.precio_base, p.porcentaje_iva, c.nombre AS categoria,
+              p.modelo_3d_url,
               (SELECT pi.url FROM producto_imagenes pi
                 WHERE pi.id_producto = p.id_producto AND pi.es_principal = true
                 ORDER BY pi.orden ASC, pi.id_imagen ASC LIMIT 1) AS imagen_principal
@@ -106,6 +118,7 @@ export class CatalogoService {
       precio_base: string;
       porcentaje_iva: string | null;
       categoria: string | null;
+      modelo_3d_url: string | null;
       imagen_principal: string | null;
     }>;
 
@@ -123,18 +136,28 @@ export class CatalogoService {
       [producto.id_producto],
     )) as Array<{ nombre: string }>;
 
+    const imagenes = (await this.dataSource.query(
+      `SELECT pi.url, pi.es_principal, col.nombre AS color, col.codigo_hex
+       FROM producto_imagenes pi
+       LEFT JOIN colores col ON col.id_color = pi.id_color
+       WHERE pi.id_producto = $1
+       ORDER BY pi.es_principal DESC, pi.orden ASC, pi.id_imagen ASC`,
+      [producto.id_producto],
+    )) as ImagenProductoPublica[];
+
     const colores = (await this.dataSource.query(
-      `SELECT DISTINCT col.nombre, col.codigo_hex
+      `SELECT DISTINCT col.nombre, col.codigo_hex,
+              (SELECT pi.url FROM producto_imagenes pi WHERE pi.id_producto = ptc.id_producto AND pi.id_color = col.id_color LIMIT 1) as imagen_url
        FROM producto_talla_color ptc
        JOIN colores col ON col.id_color = ptc.id_color
        WHERE ptc.id_producto = $1 AND LOWER(col.estado) = 'activo'
        ORDER BY col.nombre ASC`,
       [producto.id_producto],
-    )) as Array<{ nombre: string; codigo_hex: string | null }>;
+    )) as Array<{ nombre: string; codigo_hex: string | null; imagen_url?: string | null }>;
 
     const filas = (await this.dataSource.query(
       `SELECT s.id_sucursal, s.nombre AS sucursal, s.direccion, s.telefono, ci.nombre AS ciudad,
-              t.nombre AS talla, t.orden AS talla_orden, col.nombre AS color, col.codigo_hex AS color_hex,
+              inv.id_ptc, t.nombre AS talla, t.orden AS talla_orden, col.nombre AS color, col.codigo_hex AS color_hex,
               inv.cantidad_disponible, inv.cantidad_reservada, inv.stock_minimo_alert
        FROM inventario_stock inv
        JOIN producto_talla_color ptc ON ptc.id_ptc = inv.id_ptc
@@ -164,6 +187,7 @@ export class CatalogoService {
       const disponible = Number(f.cantidad_disponible);
       const stockMinimo = Number(f.stock_minimo_alert ?? 0);
       item.lineas.push({
+        id_ptc: f.id_ptc,
         talla: f.talla,
         color: f.color,
         codigo_hex: f.color_hex,
@@ -182,7 +206,9 @@ export class CatalogoService {
         precio: Math.round(Number(producto.precio_base) * (1 + Number(producto.porcentaje_iva ?? 0) / 100) * 100) / 100,
         categoria: producto.categoria,
         imagen_principal: producto.imagen_principal,
+        modelo_3d_url: producto.modelo_3d_url,
       },
+      imagenes,
       tallas,
       colores,
       sucursales: Array.from(sucursales.values()),

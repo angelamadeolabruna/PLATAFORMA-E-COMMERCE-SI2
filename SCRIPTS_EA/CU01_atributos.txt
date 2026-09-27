@@ -1,0 +1,118 @@
+CU01 - INICIAR SESIÓN EN PLATAFORMA
+ATRIBUTOS PARA PEGAR EN EA (Properties > Attributes > New > Ctrl+V)
+
+El formato es: Name <TAB> Type <TAB> Notes
+Copia SOLO las líneas del bloque de cada clase.
+Las clases marcadas como (sin atributos) se dejan vacías.
+
+================================================================
+Login  (Boundary)  alias IU_Login
+================================================================
+credencial	String	
+password	String	
+verPassword	Boolean	
+error	String	
+enviando	Boolean	
+
+================================================================
+AuthProvider  (Boundary)  alias IU_AuthProvider
+================================================================
+usuario	UsuarioSesion	
+token	String	
+cargando	Boolean	
+
+================================================================
+api  (Boundary)  alias IU_Api
+================================================================
+baseUrl	String = /api/v1	
+
+================================================================
+AuthController  (Control)  alias CTR_Auth
+================================================================
+cookieSecure	Boolean	
+
+================================================================
+LoginRequest  (DTO)  alias CE_LoginRequest
+================================================================
+credencial	String	
+password	String	
+
+================================================================
+AuthService  (Service)  alias SRV_AuthService
+================================================================
+dataSource	DataSource	
+jwtTokenService	JwtTokenService	
+bitacoraService	BitacoraService	
+seguridadService	SeguridadService	
+
+================================================================
+JwtTokenService  (Service)  alias SRV_JwtTokenService
+================================================================
+accessMinutos	Number = 15	
+refreshDias	Number = 7	
+algoritmo	String = HS256	
+
+================================================================
+SeguridadService  (Service)  alias SRV_SeguridadService
+================================================================
+(sin atributos)
+
+================================================================
+DataSource  (Service)  alias SRV_DataSource
+================================================================
+(sin atributos)
+
+================================================================
+BitacoraService  (Service)  alias SRV_BitacoraService
+================================================================
+(sin atributos)
+
+================================================================
+AuthResponse  (DTO)  alias CE_AuthResponse
+================================================================
+access_token	String	
+refresh_token	String	
+token_type	String = bearer	
+usuario	UsuarioSesion	
+
+================================================================
+Usuario  (Entity)  alias CE_Usuario
+================================================================
+id_usuario	Integer	
+email	String	
+password_hash	String	
+estado	String = Pendiente	
+intentos_fallidos	Integer = 0	
+bloqueado_hasta	Timestamp	
+fecha_ultimo_acceso	Timestamp	
+
+================================================================
+UsuarioRol  (Entity)  alias CE_UsuarioRol
+================================================================
+id_usuario	Integer	
+id_rol	Integer	
+
+================================================================
+Rol  (Entity)  alias CE_Rol
+================================================================
+id_rol	Integer	
+nombre_rol	String	
+permisos_json	JSONB	
+estado	String = Activo	
+
+================================================================
+BitacoraAuditoria  (Entity)  alias CE_BitacoraAuditoria
+================================================================
+id_bitacora	Integer	
+id_usuario	Integer	
+accion_sql	String	
+tabla_afectada	String	
+id_registro	Integer	
+detalle	Text	
+ip_address	INET	
+user_agent	String	
+fecha_hora	Timestamp	
+
+================================================================
+TOTAL: 45 atributos en 15 clases
+Origen: código real React/Vite (web) + NestJS (api) + schema.sql

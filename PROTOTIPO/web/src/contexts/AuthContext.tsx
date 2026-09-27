@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { api, type UsuarioSesion } from '@/lib/api.js';
+import { api, guardarTokenInvitado, type UsuarioSesion } from '@/lib/api.js';
 
 interface AuthContextValue {
   usuario: UsuarioSesion | null;
@@ -63,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setCargando(true);
     try {
       const resultado = await api.login(credencial, password);
+      guardarTokenInvitado(null);
       setToken(resultado.access_token);
       setUsuarioState(resultado.usuario);
       return resultado.usuario;
@@ -75,6 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await api.logout();
     } finally {
+      guardarTokenInvitado(null);
       setToken(null);
       setUsuarioState(null);
     }
