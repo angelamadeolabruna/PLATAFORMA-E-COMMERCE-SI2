@@ -1,0 +1,366 @@
+DESPLIEGUE EN AZURE, PASO A PASO
+Plataforma Web y Movil de E-Commerce - Tiendas Montano
+
+Este documento es una lista de pasos. Se hacen en orden y no hace falta decidir nada
+por el camino. Al final hay una lista de comprobacion.
+
+Lo que se despliega
+
+  Backend      NestJS, 71 rutas      ->  Azure App Service para Linux
+  Frontend     React 19, 35 pantallas ->  Azure Static Web Apps
+  Base de datos  ya esta en Supabase   ->  no se hace nada, no se toca
+
+El backend y el frontend van en el MISMO dominio, con el Static Web Apps haciendo de
+proxy hacia el App Service. Asi no hay CORS, no hay problema de cookies y el codigo no
+se toca, porque el cliente HTTP del frontend ya pide rutas relativas: en
+web/src/lib/api.ts, linea 1015, tiene puesto baseUrl: '/api/v1'.
+
+Costo: 0. App Service tiene plan Free, Static Web Apps tiene plan Free.
+
+
+=====================================================================
+FASE 0. EN TU ORDENADORA, ANTES DE ABRIR AZURE
+=====================================================================
+
+0.1  Comprueba que el backend compila.
+
+     cd "C:\Users\pablo\desktop\open coude\PLATAFORMA WEB Y MOVIL DE E-COMMERCE DE TIENDA DE ROPA\PROTOTIPO\api"
+     npm run build
+
+     Si no da error, sigue. Si da error, no sigas, porque el despliegue fallara igual.
+
+0.2  Comprueba que el frontend tambien compila.
+
+     cd ..\web
+     npm run build
+
+0.3  Sube los dos cambios que se hicieron al preparar el despliegue.
+
+     cd ..\..
+     git add -A
+     git commit -m "feat: despliegue en Azure - rutas de almacenamiento por entorno y config de Static Web Apps"
+     git push
+
+     Los cambios son: una linea en SRV_ComprobantesService, para que la carpeta de los
+     PDF se lea del entorno, y el fichero nuevo web/staticwebapp.config.json.
+
+
+=====================================================================
+FASE 1. CREAR EL RECURSO COMPARTIDO DE ARCHIVOS
+=====================================================================
+
+Esto es lo que mas se olvida y lo que hace que se pierdan las facturas. Se hace primero
+porque despues hay que montarlo en el App Service.
+
+Por que. En Azure App Service el disco del sistema se borra en cada reinicio, en cada
+despliegue y en cada escalado. Todo lo que el sistema escribe: los PDF de las facturas,
+los respaldos de la base de datos y los reportes, se perderian. Un recurso compartido de
+archivos es un disco que no se borra.
+
+1.1  En https://portal.azure.com, menu de la izquierda, Storage accounts.
+     Si no aparece, busca "Storage accounts" en el buscador de arriba.
+
+1.2  Create. Los datos:
+
+       Subscription          la que tengas
+       Resource group         Create new, y ponle: tiendas-montano
+       Storage account name   tmplazemontano
+       Region                la que te quede mas cerca. La de Supabase es sa-east-1,
+                              en Sao Paulo, y es la que menos latencia da.
+       Primary performance    Standard
+       Redundancy            la que venga por defecto
+       Access tier            Hot, o el que venga por defecto
+
+1.3  Create, y espera un minuto.
+
+1.4  En el almacen, menu Files > File shares > File share > Create.
+
+       Nombre                 almacen
+       Cuota                  5 GiB, que es lo minimo y sobra
+
+1.5  Anota la URL del recurso compartido. Sale en Overview > Endpoint > File share
+     endpoint, y tiene esta forma:
+
+       https://tmplazemontano.file.core.windows.net/almacen
+
+     La parte que te interesa es el nombre, tmplazemontano, que usaremos en la Fase 3.
+
+1.6  No hace falta crear ningun contenedor de blobs. Eso es para cuando se implemente
+     Azure Blob Storage, que es el arreglo definitivo y no el de ahora.
+
+
+=====================================================================
+FASE 2. CREAR EL APP SERVICE DEL BACKEND
+=====================================================================
+
+2.1  Menu de la izquierda, App Services > Create.
+
+2.2  Los datos de las pestanas Basics:
+
+       Pestana Web:
+         Name                api-tiendasmontano
+                               Ojo: el nombre se convierte en parte de la direccion, asi
+                               que prueba otro si ya existe ese.
+         Runtime stack       Node 22 LTS
+         Operating system    Linux
+                               IMPORTANTE. Los respaldos y los PDF asumen rutas que no
+                               funcionan en Windows, y en Windows el disco local si
+                               sobrevive, asi que desplegar en Windows ocultaria el
+                               problema de los ficheros.
+         Region              la misma que elegiste en la Fase 1
+
+       Pestana Plan:
+         Pricing plan        el que diga Free (F1) o B1. Los dos valen.
+
+2.3  Pestana Database, anade la que ya tienes. Click Add, y elige Azure Cosmos DB for
+     PostgreSQL... NO. Este paso se salta. Tu base de datos NO esta en Azure, esta en
+     Supabase, y la vas a conectar con una cadena de conexion, no con un recurso.
+
+2.4  Click Review + create, y luego Create. Tarda un minuto o dos.
+
+
+=====================================================================
+FASE 3. MONTAR EL DISCO Y PONER LAS VARIABLES DE ENTORNO
+=====================================================================
+
+3.1  Montar el recurso compartido. En el App Service, menu Configuration > Mount paths.
+
+       Add, y rellena:
+
+         Name               storage
+         Share name         almacen
+         Mount path         /home/storage
+         Access rights      Read/Write
+
+3.2  Añadir las variables de entorno. Menu Configuration > Environment variables > Add.
+     Añade estas una por una:
+
+       PORT                      8080
+       DATABASE_URL              la cadena de Supabase con la clave nueva
+       JWT_SECRET                una cadena larga y aleatoria, de 64 caracteres o mas
+       JWT_ACCESS_TOKEN_MINUTES  15
+       JWT_REFRESH_TOKEN_DAYS    7
+       JWT_ALGORITHM             HS256
+       COOKIE_SECURE             true
+       CORS_ORIGINS              la direccion del Static Web Apps, sin https y sin barra
+       EMAIL_ENABLED             false
+       STORAGE_BACKEND           local
+       STORAGE_COMPROBANTES      /home/storage/comprobantes
+       RESPALDOS_DIR             /home/storage/respaldos
+       STORAGE_PATH              /home/storage/reportes
+
+     CUATRO DE ESTAS NECESITAS EXPLICACION:
+
+     PORT tiene que ser 8080. Azure App Service para Linux espera que la aplicacion
+     escuche en ese puerto, y lo lee de la variable PORT. El codigo, en main.ts linea 45,
+     hace config.get('PORT', 3000), o sea que si pones la variable, gana la variable.
+
+     COOKIE_SECURE tiene que ser true. En tu .env local vale false porque trabajas en
+     http. En Azure todo va por https, y si esto se queda en false el navegador no
+     guarda las cookies de sesion y el login va a parecer roto sin que haya ningun error.
+
+     CORS_ORIGINS se escribe SIN https y SIN barra final. Por ejemplo, si el Static Web
+     Apps acaba en https://tm-web-123.azurestaticapps.net, aqui va:
+         tm-web-123.azurestaticapps.net
+     Si son varios, separados por comas y sin espacios.
+
+     STORAGE_COMPROBANTES es la variable nueva. Antes el codigo tenia escrito
+     process.env.STORAGE_BACKEND === 's3' ? 'comprobantes' : 'comprobantes', o sea que
+     las dos ramas eran iguales y no hacia nada. Ahora lee directamente de aqui, y por eso
+     los PDF van al disco que no se borra.
+
+     NO ANADAS RESPALDOS_PG_DUMP_PATH. La que tienes apunta a
+     C:\Users\pablo\AppData\Local\Temp\..., que es una ruta de Windows y no existe en
+     Linux. Si la pones, el servicio de respaldos falla. Si no la pones, el codigo usa el
+     nombre pg_dump a secas, que tampoco esta instalado. Los respaldos automaticos no
+     van a funcionar en la nube hasta que se resuelva, y eso se documenta como pendiente.
+
+3.3  Click Save. Te pide reiniciar, y le dices que si.
+
+3.4  Sube el .env con la clave nueva. Copia la linea DATABASE_URL de tu archivo local
+     PROTOTIPO/api/.env, que ya tiene la clave que cambiaste, y pegala como valor de
+     DATABASE_URL. Lo mismo con JWT_SECRET: usa el de tu .env local para que las sesiones
+     que ya tengas sigan valiendo.
+
+
+=====================================================================
+FASE 4. LOS COMANDOS DE COMPILACION Y DE ARRANQUE
+=====================================================================
+
+4.1  En el App Service, menu Configuration > General settings, o el enlace Build de
+     arriba. Rellena:
+
+       Build command        cd api && npm ci --include=dev && npm run build
+       Startup command      cd api && node dist/main
+       App stack            Node 22 LTS
+       Runtime version      22.x
+       Always On            On, si esta disponible en tu plan
+
+     POR QUE ESCRIBO cd api EN LOS DOS. El repositorio tiene tres carpetas: api, web y la
+     raiz. El App Service solo necesita el backend. El comando de compilacion instala
+     las dependencias incluidas las de desarrollo, porque nest build esta ahi y sin el no
+     compila. El de arranque solo necesita las de produccion.
+
+     Startup command NO es npm start. Ese es el modo de desarrollo, con recarga
+     automatica y sin compilar. En produccion es node dist/main, que es lo que produce
+     nest build.
+
+4.2  Click Save.
+
+4.3  En el menu Deployment > Deployment center, click Re-deploy. Empieza a instalar
+     dependencias, que tarda tres o cuatro minutos la primera vez.
+
+
+=====================================================================
+FASE 5. COMPROBAR QUE EL BACKEND RESPONDE
+=====================================================================
+
+5.1  Espera a que termine el despliegue. El menu Deployment muestra el estado en verde.
+
+5.2  Abre en el navegador:
+
+       https://api-tiendasmontano.azurewebsites.net/api/v1/health
+
+5.3  Tiene que salir esto:
+
+       {"status":"ok"}
+
+     Esa ruta la sirve HealthController, y existe justo para esto.
+
+5.4  Si no sale, mira el menu Logs > Deployment logs y el menu Logs > Application logs.
+     Lo mas probable es una de estas dos:
+
+       Cannot find module    El build command esta mal. Tiene que ser exactamente
+                             cd api && npm ci --include=dev && npm run build
+
+       ETIMEDOUT o ECONNREFUSED  La cadena de DATABASE_URL esta mal. Copiala del .env
+                             de nuevo, con la clave nueva.
+
+5.5  Prueba tambien una ruta que necesite la base de datos, que es mas util que /health
+     porque de verdad consulta. Abre el navegador con esta direccion, sin sesion, y tiene
+     que devolver 401:
+
+       https://api-tiendasmontano.azurewebsites.net/api/v1/carrito
+
+     Un 401 es la respuesta CORRECTA. Si devuelve 500, la base de datos no conecta.
+
+
+=====================================================================
+FASE 6. CREAR EL STATIC WEB APPS DEL FRONTEND
+=====================================================================
+
+6.1  En el portal, busca "Static Web Apps" y Create.
+
+6.2  Pestana Getting Started:
+
+       Source                 GitHub
+       Organization           angelamadeolabruna
+       Repository            PLATAFORMA-E-COMMERCE-SI2
+       Branch                 main
+
+6.3  Pestana Build:
+
+       Build preset           Vite
+       App location           /web
+       Output location        dist
+       Custom build command   MARCADO, y pon: npm run build
+
+     APP LOCATION ES /WEB Y ESO ES LO QUE MAS GENTE SE OLVIDA. Como la aplicacion esta
+     en la carpeta web y no en la raiz, hay que decirlo. Si lo dejas vacio, el Static Web
+     Apps busca un package.json en la raiz, lo encuentra, y no sabe que construir.
+
+6.4  Pestana Review and create, y Create. Espera dos o tres minutos.
+
+6.5  El portal te dira algo parecido a: "Static Web App is ready. Would you like to link
+     your Static Web App to an Azure resource?" Ahi pincha Link. Aparece una lista de
+     recursos de Azure, y eliges tu App Service, api-tiendasmontano.
+
+     ESO ES LO QUE HACE EL PROXY. Con este paso, el Static Web Apps ya manda las
+     peticiones que empiezan por /api al App Service, y todo queda en el mismo dominio.
+     Si se te pasa, puedes hacerlo despues: menu Linked resources > Add.
+
+
+=====================================================================
+FASE 7. PROBAR LA APLICACION ENTERA
+=====================================================================
+
+7.1  Abre la direccion que te dio el Static Web Apps. Debe parecerse a esto:
+
+       https://tm-web-123.azurestaticapps.net
+
+7.2  Copia ese dominio, quitalo el https y la barra final, y ponlo en CORS_ORIGINS del
+     App Service si no lo hiciste en la Fase 3. Reinicia el App Service.
+
+7.3  Primera prueba: la lista de categorias en el catalogo. Abre F12 en el navegador,
+     pestana Network, filtra por "api", y recarga. Cada peticion tiene que salir con
+     status 200 y sin errores de CORS en la consola.
+
+7.4  Segunda prueba: el login. Entra con admin@tiendasmontano.bo. Si falla y vuelve a
+     la pantalla de inicio, mira COOKIE_SECURE, que tiene que estar en true.
+
+7.5  Tercera prueba: la compra. Agrega una prenda al carrito, paga y descarga el
+     comprobante. Aqui se comprueba el arreglo del disco.
+
+7.6  Cuarta prueba, y es la importante: REINICIA el App Service desde el menu Overview >
+     Restart, espera a que vuelva, y vuelve a descargar el comprobante. Si el PDF sigue
+     ahi, el recurso compartido esta bien montado. Si da 404, el montaje fallo y hay que
+     repasar el punto 3.1.
+
+
+=====================================================================
+FASE 8. LO QUE QUEDA PENDIENTE
+=====================================================================
+
+8.1  Los respaldos automaticos no funcionan en la nube. La causa es que el ejecutable
+     pg_dump no esta instalado en la imagen de Node de Azure, y el que tienes apunta a
+     una ruta de Windows. Hay dos salidas: instalar el cliente de PostgreSQL en un
+     contenedor propio, o desactivar los respaldos automaticos y documentarlo. Para una
+     demostracion yo desactivaria y lo dejaria escrito.
+
+8.2  El almacenamiento en Azure Blob Storage no esta implementado. La variable
+     STORAGE_BACKEND existe y se lee, pero en el servicio de comprobantes las dos ramas
+     del ternario eran la misma palabra, y en el de respaldos el propio codigo avisa que
+     el modo S3 no esta configurado. Con el recurso compartido de archivos de la Fase 1
+     esto ya no es urgente, porque el disco persiste, pero si mañana quieres varias
+     instancias a la vez, hay que pasarse a Blob Storage.
+
+8.3  El webhook de la pasarela de pago queda apuntando a una pasarela simulada que esta
+     dentro del propio servidor, en la ruta POST sandbox/gateway. En produccion hay que
+     apuntar a una pasarela de verdad, y eso es un trabajo aparte.
+
+8.4  La base de datos de produccion tiene 7 productos y 48 variantes, segun lo que se
+     comprobó al desplegar. El archivo de datos de prueba siembra 24 productos y 78
+     variantes. Si vas a enseñar el catalogo en la demostracion, hay que cargar los datos
+     de prueba primero.
+
+8.5  El motor de recomendaciones y el buscador del punto de venta filtran el estado de
+     los productos por una palabra que no es la que trae el esquema, asi que devuelven
+     cero resultados. Eso se arregla en el codigo, no en Azure.
+
+
+=====================================================================
+LISTA DE COMPROBACION
+=====================================================================
+
+  [ ]  npm run build funciona en api
+  [ ]  npm run build funciona en web
+  [ ]  Los dos cambios estan subidos a GitHub
+  [ ]  Storage account creado, con el grupo de recursos tiendas-montano
+  [ ]  Recurso compartido "almacen" creado, 5 GiB
+  [ ]  App Service creado en LINUX, con Node 22
+  [ ]  /home/storage montado en el App Service, con permisos de lectura y escritura
+  [ ]  Las 12 variables de entorno puestas
+  [ ]  COOKIE_SECURE en true
+  [ ]  STORAGE_COMPROBANTES en /home/storage/comprobantes
+  [ ]  RESPALDOS_PG_DUMP_PATH NO puesta
+  [ ]  Build command: cd api && npm ci --include=dev && npm run build
+  [ ]  Startup command: cd api && node dist/main
+  [ ]  /api/v1/health devuelve {"status":"ok"}
+  [ ]  /api/v1/carrito devuelve 401, no 500
+  [ ]  Static Web Apps creado con App location /web
+  [ ]  App Service enlazado al Static Web Apps, para el proxy
+  [ ]  CORS_ORIGINS con el dominio del Static Web Apps
+  [ ]  El catalogo carga sin errores de CORS
+  [ ]  El login funciona
+  [ ]  Una compra completa, con descarga del comprobante
+  [ ]  El comprobante sobrevive a un reinicio del App Service

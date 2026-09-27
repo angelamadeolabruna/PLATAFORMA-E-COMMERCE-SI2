@@ -2,7 +2,12 @@
 node_modules/
 
 # Entorno / secretos (nunca subir credenciales)
+# .env.example SI se sube a proposito: documenta que variables hacen falta
+# sin contener ningun valor. Por eso la excepcion de abajo.
 **/.env
+**/.env.*
+**/*.bak
+!**/.env.example
 
 # Pruebas de extremo a extremo: llevan la cadena de conexion de la base
 # de datos de PRODUCCION escrita dentro. Deben leerla de process.env.
@@ -24,6 +29,7 @@ PROTOTIPO/test-results/
 # Builds
 dist/
 build/
+*.tsbuildinfo
 
 # Logs
 *.log

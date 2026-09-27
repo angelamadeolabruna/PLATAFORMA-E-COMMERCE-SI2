@@ -18,7 +18,13 @@ export interface Fila {
   [key: string]: unknown;
 }
 
-const DIR_COMPROBANTES = process.env.STORAGE_BACKEND === 's3' ? 'comprobantes' : 'comprobantes';
+// Ruta de los PDF de comprobante. Se lee del entorno porque en Azure App Service
+// el disco del sistema es efimero: lo que se escribe fuera de /home se pierde en
+// cada reinicio, cada despliegue y cada escalado. Hay que apuntar esto a un
+// recurso compartido de archivos montado en la aplicacion.
+//   En local      STORAGE_COMPROBANTES=comprobantes
+//   En Azure      STORAGE_COMPROBANTES=/home/storage/comprobantes
+const DIR_COMPROBANTES = process.env.STORAGE_COMPROBANTES ?? 'comprobantes';
 
 // CU38 - Emitir Comprobante de Venta
 @Injectable()
