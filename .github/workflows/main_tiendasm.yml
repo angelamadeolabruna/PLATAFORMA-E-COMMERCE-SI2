@@ -26,12 +26,14 @@ jobs:
       # El backend no esta en la raiz del repositorio, esta en PROTOTIPO/api.
       # Sin working-directory, npm install no encuentra el package.json y el
       # flujo entero falla.
-      - name: npm install, build, and test
+      # Aqui no se corren las pruebas: vitest necesita la base de datos de
+      # Supabase y las variables de entorno, que no existen en este entorno.
+      # Las pruebas se ejecutan aparte, contra la base de datos de pruebas.
+      - name: instalar dependencias y compilar
         working-directory: PROTOTIPO/api
         run: |
           npm install
           npm run build --if-present
-          npm run test --if-present
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
