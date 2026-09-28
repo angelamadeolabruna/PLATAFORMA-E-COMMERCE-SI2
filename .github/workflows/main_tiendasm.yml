@@ -23,7 +23,11 @@ jobs:
         with:
           node-version: '22.x'
 
+      # El backend no esta en la raiz del repositorio, esta en PROTOTIPO/api.
+      # Sin working-directory, npm install no encuentra el package.json y el
+      # flujo entero falla.
       - name: npm install, build, and test
+        working-directory: PROTOTIPO/api
         run: |
           npm install
           npm run build --if-present
