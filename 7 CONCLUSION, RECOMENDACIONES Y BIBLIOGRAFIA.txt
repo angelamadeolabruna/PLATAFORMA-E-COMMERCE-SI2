@@ -50,7 +50,7 @@ Aunque algunos objetivos quedaron parcialmente cumplidos, el proyecto representa
 
 9. Implementar reportes y dashboards de ventas e inventario con emisión de alertas críticas. Este objetivo se cumplió parcialmente, y de manera desigual entre sus tres partes. Los reportes de ventas y de inventario funcionan y se exportan en PDF, Excel y CSV, con confirmación previa del usuario y registro de cada emisión en la bitácora de auditoría dentro de la misma transacción. El dashboard no existe: hay un componente de pantalla en construcción que muestra el mensaje de que la sección aún no está implementada, y el motor de reportes no contiene ningún indicador, ningún porcentaje y ninguna comparación entre periodos. Las alertas de stock mínimo tienen su tabla de configuración, pero esa tabla no la lee ningún archivo del proyecto.
 
-10. Desplegar el sistema en la nube para su acceso desde navegador y dispositivos móviles. Este objetivo no se puede verificar. Existe una base de datos PostgreSQL alojada en un servicio en la nube, y la cadena de conexión del propio prototipo apunta a un entorno de producción, lo que indica que hubo una intención de despliegue. Sin embargo, el repositorio tiene 294 archivos modificados sin confirmar sobre un total de 7 confirmaciones, y no hay evidencia de un procedimiento de despliegue documentado, ni de una configuración de entorno reproducible, ni de un dominio configurado.
+10. Desplegar el sistema en la nube para su acceso desde navegador y dispositivos móviles. Este objetivo se cumpla a medias, y el motivo es de infraestructura, no de código. El despliegue se intentó y quedó documentado en la sección 6, fase 9. El frontend web sí está publicado y responde: vive en el dominio del Static Web Apps tiendas-montano-web, con un tiempo de respuesta de 609 milisegundos y 879 KB servidos, y la cadena completa de compilación con Vite y subida por GitHub Actions funciona sin intervención manual. El backend no se pudo publicar. La causa raíz es que la suscripción de Azure no tiene método de pago registrado, y una cuenta de pago por uso normal no recibe cupo de cómputo en ninguna región mientras no exista una forma de pago: el plan gratuito F1 devuelve un cupo de 0, y el plan Básico B1, que sí tiene precio, devuelve también un cupo de 0. Los recursos sin coste, como el almacenamiento y el propio Static Web Apps, sí se crearon, lo que confirma que el problema es la facturación y no la configuración. Como alternativa se construyó y publicó la imagen de la API en un registro de contenedores, con un Dockerfile de dos etapas que resuelve la compilación del módulo nativo bcrypt, y esa imagen queda disponible para cuando se resuelva el bloqueo. El despliegue queda por tanto a medias, y se declara así en lugar de darse por cumplido.
 
 8. RECOMENDACIONES
 
@@ -117,7 +117,7 @@ Supabase	Aloja la base de datos en la nube y es el destino de despliegue de los 
 JWT y bcrypt	Controlan la autenticación y el hash de las contraseñas.	Expirar el token en un tiempo corto, guardar las contraseñas solo como hash, y evitar que el secreto de firma del token comparta origen con el de la pasarela de pago.
 pdfkit y xlsx	Generan el comprobante en PDF y la hoja de cálculo del reporte.	Escribir los ficheros en un directorio con permisos restringidos, no dejar los ficheros dentro del repositorio, y limpiar los que ya no se referencien en la base de datos.
 Vitest con Supertest	Son las herramientas de prueba instaladas y configuradas, y las que deben ejecutar los casos de prueba.	Apuntar a una base de datos de pruebas creada desde el archivo de esquema, mantener la cobertura por encima del umbral acordado, y no permitir pruebas que escriban en la base de datos de producción.
-GitHub	Controla las versiones del código y permite revisar cambios.	Confirmar los 294 archivos pendientes, adoptar commits con mensajes que indiquen el módulo afectado, y revisar los cambios antes de enviarlos al entorno de despliegue.
+GitHub	Controla las versiones del código y permite revisar cambios.	Adoptar commits con mensajes que indiquen el módulo afectado, y revisar los cambios antes de enviarlos al entorno de despliegue.
 Enterprise Architect	Genera los diagramas de componentes por paquete y el modelo de datos, y es el repositorio de la documentación técnica.	Versionar los scripts que generan los diagramas para que puedan regenerarse, y comprobar que el número de componentes declarados en cada script coincide con el número dibujado.
 PUDS	Ordena el desarrollo mediante flujos de trabajo iterativos e incrementales centrados en la arquitectura.	Planificar cada mejora por iteración y validar requisitos, diseño, implementación y pruebas antes de avanzar a la etapa siguiente.
 UML 2.5	Representa actores, casos de uso, clases, componentes, mensajes entre paquetes y despliegue.	Actualizar los diagramas cuando se modifique un módulo, y mantener la correspondencia entre el nombre del caso de uso y el componente que lo implementa.
@@ -134,7 +134,34 @@ Respaldo: la base de datos debe copiarse periódicamente, y las copias deben com
 Mantenimiento: cualquier cambio en un módulo, en la base de datos o en una regla de negocio debe documentarse y probarse antes de activarse, y debe quedar registrado en la bitácora de auditoría con el valor anterior y el nuevo.
 Continuidad: el proyecto tiene un solo responsable técnico conocido, de manera que conviene documentar el procedimiento de arranque, de respaldo y de recuperación para que no dependa de una sola persona.
 
+8.1.15 Regular la forma de pago y el cupo antes de depender de la nube
+
+Acción: registrar un método de pago en la suscripción de Azure con un límite de gasto bajo y declarado, y comprobar antes de empezar que el plan previsto tiene cupo asignado en la región elegida.
+
+Motivo: el despliegue del frontend funcionó a la primera porque el Static Web Apps no tiene coste, pero el backend no se pudo crear nunca. La respuesta de Azure fue que el cupo del plan era cero, tanto en el plan gratuito como en el de pago, y la causa fue que la suscripción no tenía método de pago. Una cuenta de pago por uso normal no recibe cupo de cómputo mientras no exista una forma de pago, de manera que la petición de un recurso barato falla igual que la de uno caro. La creación de los dos recursos gratuitos, que sí se crearon, es lo que demuestra que la causa es la facturación y no la configuración del proyecto.
+
+Impacto esperado: elimina la causa raíz del bloqueo, permite publicar el backend reutilizando la imagen que ya está compilada y subida al registro de contenedores, y convierte el despliegue en un procedimiento reproducible en lugar de un intento. Como referencia, el costo real de la aplicación sería de céntimos al mes si el contenedor se apaga cuando no hay tráfico.
+
+8.1.16 Fijar el origen único antes de publicar, para que la sesión no se caiga
+
+Acción: configurar el Static Web Apps para que las rutas /api se dirijan al backend desde el propio dominio, en el momento de crear el recurso, y no después.
+
+Motivo: las cookies de sesión se emiten con el atributo sameSite igual a lax y sin atributo domain, y ese atributo solo admite la cookie cuando el sitio que la emite y el que hace la petición son el mismo. Si el frontend y el backend quedan en dominios distintos, el acceso funciona durante la vida del token, que es de quince minutos, y después el usuario vuelve a la pantalla de ingreso sin motivo aparente. El campo que resuelve el proxy solo existe en el formulario de creación del recurso, de manera que configurarlo más tarde obliga a rehacerlo.
+
+Impacto esperado: evita un fallo de sesión difícil de diagnosticar, que se manifiesta como un cierre de sesión espontáneo y no como un error visible, y evita tener que rehacer el recurso cuando ya esté en producción.
+
+8.1.17 Documentar la trazabilidad entre casos de uso, componentes y líneas de código
+
+Acción: mantener la tabla que relaciona cada uno de los 36 casos de uso con el paquete, el componente y la línea de código que lo implementa, y regenerar los diagramas de componentes cada vez que se añada un componente.
+
+Motivo: los diez diagramas de componentes por paquete declaran su conteo en el propio guion y se verificaron contra un comprobador automático, y ese es el único mecanismo que garantiza que lo dibujado y lo declarado coincidan. El modelo de datos, con 51 tablas, sigue el mismo criterio.
+
+Impacto esperado: conserva la correspondencia entre la especificación y la implementación, que es lo que permite detectar los desvíos como el de las tecnologías utilizadas, y reduce el esfuerzo de mantenimiento documental.
+
+
+=====================================================================
 9. BIBLIOGRAFÍA
+=====================================================================
 
 La bibliografía se presenta de manera documentada, con fuentes metodológicas, normativas y técnicas utilizadas para sustentar el desarrollo del sistema. Las referencias principales corresponden al Proceso Unificado de Desarrollo de Software, al lenguaje de modelado UML, a la arquitectura de aplicaciones de empresa y a las tecnologías efectivamente empleadas en la implementación.
 

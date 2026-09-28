@@ -1,12 +1,12 @@
 // ================================================================
 // PAQUETE 8  ·  ARQUITECTURA DEL SUBSISTEMA
-// Ventas, Pagos y Devoluciones  ·  CU25 a CU31
+// Ventas y Pagos  ·  CU28 a CU31
 // E-COMMERCE TIENDA MONTANO   ·   Seccion 5.3.8
 //
 // QUE DIBUJA
 //   El diagrama de componentes del paquete 8, con los 31 componentes
 //   del subsistema y las 62 interfaces entre ellos, y TODO DENTRO de
-//   un marco que se llama PAQUETE 8 - VENTAS, PAGOS Y DEVOLUCIONES.
+//   un marco que se llama PAQUETE 8 - VENTAS Y PAGOS.
 //
 //   Cuatro modulos de NestJS, carrito, ventas, pagos y comprobantes,
 //   mas un quinto controlador, PosController, que vive dentro de la
@@ -63,7 +63,7 @@
 var SALTO = String.fromCharCode(10);
 var RAIZ = Repository.Models.GetAt(0);
 
-var PAQ_NOMBRE = "Paquete 8 - Ventas, Pagos y Devoluciones";
+var PAQ_NOMBRE = "Paquete 8 - Ventas y Pagos";
 var DIAG_NOMBRE = "Arquitectura del Paquete 8";
 
 var TOTAL_CMP = 31;
@@ -73,7 +73,7 @@ var TOTAL_CAP = 7;
 var ERRORES = [];
 var INFORME = [];
 
-var MARCO_NOMBRE = "PAQUETE 8 - VENTAS, PAGOS Y DEVOLUCIONES";
+var MARCO_NOMBRE = "PAQUETE 8 - VENTAS Y PAGOS";
 var MARCO_X = 10;
 var MARCO_Y = 10;
 var MARCO_W = 1600;
@@ -338,7 +338,7 @@ var DOND = [
 function aviso(txt) {
     try {
         var shell = new ActiveXObject("WScript.Shell");
-        shell.Popup(txt, 0, "Paquete 8 - Ventas, Pagos y Devoluciones", 64);
+        shell.Popup(txt, 0, "Paquete 8 - Ventas y Pagos", 64);
     } catch (e) { }
 }
 
@@ -623,7 +623,7 @@ function main() {
 
     var N = [];
     N.push("ARQUITECTURA DEL PAQUETE 8 - INFORME DE EJECUCION");
-    N.push("Paquete 8: Ventas, Pagos y Devoluciones. Casos CU25 a CU31.");
+    N.push("Paquete 8: Ventas y Pagos. Casos CU28 a CU31.");
     N.push("");
     N.push("Componentes:   " + creados + " de " + TOTAL_CMP);
     N.push("Interfaces:    " + enlaces + " de " + TOTAL_REL);
@@ -698,9 +698,10 @@ function main() {
     N.push("  NOMBRE.  Cero rutas, cero servicios, cero pantallas, y tampoco");
     N.push("  aparece en el controlador del punto de venta.");
     N.push("");
-    N.push("  ASI QUE EL PAQUETE SE LLAMA Ventas, Pagos y Devoluciones, Y LAS");
-    N.push("  DEVOLUCIONES SON SOLO UNA TABLA.  El componente devoluciones esta");
-    N.push("  dibujado, y con la nota de que no hay nada detras.");
+    N.push("  LAS DEVOLUCIONES QUEDAN FUERA DEL ALCANCE DE ESTE PAQUETE, PERO EL");
+    N.push("  ESQUEMA LAS MANTIENE, Y POR ESO EL COMPONENTE devoluciones ESTA");
+    N.push("  DIBUJADO CON LA NOTA DE QUE NO HAY NADA DETRAS.  Son alcance futuro,");
+    N.push("  NO UN CASO DE USO DEL SEGUNDO CICLO.");
     N.push("");
     N.push("FALLO 3: LA PASARELA Y EL VERIFICADOR SON LO MISMO, CON LA MISMA CLAVE");
     N.push("");
@@ -823,8 +824,8 @@ function main() {
     try { paq.Notes = N.join(SALTO); paq.Update(); } catch (e5) { }
 
     var U = [];
-    U.push("PAQUETE 8 - Ventas, Pagos y Devoluciones");
-    U.push("CU25 a CU31   ·   4 modulos + 1 controlador extra   ·   16 rutas");
+    U.push("PAQUETE 8 - Ventas y Pagos");
+    U.push("CU28 a CU31   ·   4 modulos + 1 controlador extra   ·   16 rutas");
     U.push("");
     U.push("Componentes:   " + creados + " de " + TOTAL_CMP);
     U.push("Interfaces:    " + enlaces + " de " + TOTAL_REL);

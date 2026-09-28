@@ -339,14 +339,128 @@ FASE 8. LO QUE QUEDA PENDIENTE
 
 
 =====================================================================
+FASE 9. LO QUE OCURRIO EN EL DESPLIEGUE REAL
+=====================================================================
+
+Esta fase no estaba en la guia. Se escribio despues de intentarlo, para
+dejar constancia de que paso y por que. El despliegue se hizo el 27 de
+septiembre de 2026 contra el grupo de recursos tiendas-montano, en la
+region Brazil South, con la suscripcion Azure subscription 1.
+
+9.1  Lo que SI se creo, y funciona:
+
+      Grupo de recursos  tiendas-montano, en Brazil South
+      Storage account    tmazmontano, con el recurso compartido almacen de 5 GiB
+      Static Web Apps    tiendas-montano-web
+      Dominio del frontend  https://zealous-mud-0749ef510.5.azurestaticapps.net
+      ACR                crmontanotiendas.azurecr.io, con la imagen tmapi:v1
+
+      El frontend esta desplegado y responde. Se midio: pagina principal
+      HTTP 200 en 609 ms, y 879 KB servidos entre el HTML, el paquete de
+      JavaScript de 770 KB, la hoja de estilos de 63 KB y las imagenes.
+      El flujo de trabajo de GitHub Actions completo la compilacion de Vite
+      y subio el resultado sin errores.
+
+9.2  Lo que NO se pudo crear, y el motivo exacto.
+
+      El App Service del backend no se pudo crear. Azure devuelve esto:
+
+        ERROR: Operation cannot be completed without additional quota.
+        Additional details - Location:
+        Current Limit (F1 VMs): 0
+        Current Usage: 0
+        Amount required for this deployment (F1 VMs): 1
+
+      Y lo mismo con el plan Basico, que si tiene precio:
+
+        Current Limit (B1 VMs): 0
+
+9.3  La causa raiz no es el plan, ni la region, ni el nombre del recurso.
+
+      Es que la suscripcion no tiene metodo de pago registrado. En una
+      cuenta de pago por uso normal, Azure no concede cupo de cómputo a
+      ninguna region mientras no haya una forma de pago. Por eso:
+
+        - El plan gratuito F1 da cupo 0, porque el beneficio de cuenta
+          gratuita no esta en esta suscripcion.
+        - El plan Basico B1 tambien da cupo 0, aunque se pague.
+        - Los recursos que no cuestan dinero si se crean: por eso
+          existen el almacenamiento y el Static Web Apps.
+
+      El dato se confirmo en el portal: la pagina de Cuotas sale vacia,
+      con el aviso de que el proveedor no esta registrado para la
+      suscripcion, y en Facturacion no hay ningun metodo de pago dado de
+      alta. El cargo acumulado hasta la fecha es 0.00.
+
+9.4  Alternativa preparada: Azure Container Apps.
+
+      Como F1 no es posible, se probo la via que si tiene cuota gratuita
+      mensual, que es Container Apps en plan de consumo. Se avanzo hasta el
+      ultimo paso:
+
+        - Se registro el proveedor Microsoft.App.
+        - Se creo el registro de contenedores crmontanotiendas.azurecr.io.
+        - Se escribio el Dockerfile de la API, en PROTOTIPO/api/Dockerfile.
+        - La imagen se compilo correctamente y se subio al registro.
+        - La creacion del entorno de Container Apps quedo bloqueada por el
+          mismo motivo del punto 9.3, que tambien necesita infraestructura
+          de pago.
+
+      El Dockerfile queda en el repositorio y sirve para cualquier
+      despliegue por contenedor. Es de dos etapas: la primera instala
+      python3, make y g++ porque bcrypt es un modulo nativo y hay que
+      compilarlo, y la segunda se lleva solo node_modules ya limpio de
+      herramientas de desarrollo, dist y package.json.
+
+      Un detalle que aparecio al compilar: el comando npm ci falla, porque
+      exige que package.json y package-lock.json coincidan al byte y en
+      este proyecto no coinciden. La imagen usa npm install, que resuelve
+      lo mismo sin esa exigencia.
+
+9.5  Que habria que hacer para terminar el despliegue.
+
+      Registrar un metodo de pago en la suscripcion, con un limite de gasto
+      bajo, y repetir la Fase 2 y la Fase 3 de esta guia. Nada mas cambia:
+      la imagen ya esta compilada y subida, y la variables de entorno ya
+      estan identificadas. Con eso el backend queda en servicio en unos
+      diez minutos.
+
+      El coste real de la aplicacion seria de céntimos al mes, porque con
+      min-replicas en 0 el contenedor se apaga cuando no hay trafico y solo
+      cobra mientras corre. Al borrar el recurso se deja de facturar.
+
+9.6  Advertencia tecnica que queda pendiente para cuando se publique.
+
+      Las cookies de sesion de CTR_Auth se emiten con sameSite igual a lax
+      y sin atributo domain. Eso solo funciona si el sitio que las pone y
+      el que hace las peticiones son el mismo. Con el frontend en
+      azurestaticapps.net y el backend en otro dominio, la sesion duraria
+      quince minutos, que es la duracion del token de acceso, y despues
+      cairia.
+
+      La solucion es que el Static Web Apps proxy las rutas /api hacia el
+      backend, de modo que todo ocurre en el mismo origen. El campo que lo
+      configura, api_location, solo se puede fijar al crear el recurso, por
+      lo que probablemente haya que volver a crear el Static Web Apps
+      poniendo ahi la direccion real del backend y no una ruta de carpeta.
+      Es el punto 6.2 de la Fase 6, y es el que mas conviene no dejar para
+      el final.
+
+
+=====================================================================
 LISTA DE COMPROBACION
 =====================================================================
 
-  [ ]  npm run build funciona en api
-  [ ]  npm run build funciona en web
-  [ ]  Los dos cambios estan subidos a GitHub
-  [ ]  Storage account creado, con el grupo de recursos tiendas-montano
-  [ ]  Recurso compartido "almacen" creado, 5 GiB
+Estado real del despliegue del 27 de septiembre de 2026.
+
+  [X]  npm run build funciona en api
+  [X]  npm run build funciona en web
+  [X]  Storage account creado, con el grupo de recursos tiendas-montano
+  [X]  Recurso compartido "almacen" creado, 5 GiB
+  [X]  Static Web Apps creado con App location /web
+  [X]  El frontend desplegado responde HTTP 200 y sirve 879 KB
+  [X]  Dockerfile de la API escrito y versionado
+  [X]  Imagen tmapi:v1 compilada y subida a crmontanotiendas.azurecr.io
   [ ]  App Service creado en LINUX, con Node 22
   [ ]  /home/storage montado en el App Service, con permisos de lectura y escritura
   [ ]  Las 12 variables de entorno puestas
@@ -357,10 +471,12 @@ LISTA DE COMPROBACION
   [ ]  Startup command: cd api && node dist/main
   [ ]  /api/v1/health devuelve {"status":"ok"}
   [ ]  /api/v1/carrito devuelve 401, no 500
-  [ ]  Static Web Apps creado con App location /web
   [ ]  App Service enlazado al Static Web Apps, para el proxy
   [ ]  CORS_ORIGINS con el dominio del Static Web Apps
   [ ]  El catalogo carga sin errores de CORS
-  [ ]  El login funciona
+  [ ]  El login funciona mas alla de quince minutos
   [ ]  Una compra completa, con descarga del comprobante
-  [ ]  El comprobante sobrevive a un reinicio del App Service
+  [ ]  El comprobante sobrevive a un reinicio del contenedor
+
+Los siete renglones sin marcar dependen todos de lo mismo: de que la
+suscripcion tenga un metodo de pago. Ver el punto 9.3.
