@@ -35,11 +35,14 @@ jobs:
           npm install
           npm run build --if-present
 
+      # El artefacto tiene que ser SOLO la carpeta de la API. Si se sube el
+      # repositorio entero, Azure recibe un paquete sin package.json en la
+      # raiz y el despliegue falla.
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .
+          path: PROTOTIPO/api
 
   deploy:
     runs-on: ubuntu-latest
