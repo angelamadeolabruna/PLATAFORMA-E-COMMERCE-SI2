@@ -30,8 +30,19 @@ export interface FotoProducto {
 // Para anadir una foto nueva, se copia una de estas lineas, se cambia la
 // prenda, el color y el nombre del fichero, y se pone dentro del parentesis.
 const FOTOS: FotoProducto[] = [
-  { prenda: 'remera', color: 'negro', fichero: 'remera-negro.png' },
+  // La remera y el polo son la misma prenda de algodón, con cuello
+  // redondeado el uno y con botones el otro. Las fotos de FUENTES son de la
+  // remera, y valen para las dos. Para el polo esta la foto que trae todos
+  // sus colores, por si se quiere una sola imagen para toda la prenda.
+  { prenda: 'remera', color: 'negro', fichero: 'polera-negra.png' },
+  { prenda: 'remera', color: 'blanco', fichero: 'polera-blanca.png' },
+  { prenda: 'remera', color: 'gris', fichero: 'polera-gris.png' },
+
+  { prenda: 'polo', color: 'negro', fichero: 'polera-negra.png' },
+  { prenda: 'polo', color: 'blanco', fichero: 'polera-blanca.png' },
+  { prenda: 'polo', color: 'gris', fichero: 'polera-gris.png' },
   { prenda: 'polo', color: 'rojo', fichero: 'polo-rojo.png' },
+
   { prenda: 'campera', color: 'negro', fichero: 'campera-negro.png' },
   { prenda: 'pantalon', color: 'azul', fichero: 'pantalon-azul.png' },
   { prenda: 'pijama', color: 'rosa', fichero: 'pijama-rosa.png' },
