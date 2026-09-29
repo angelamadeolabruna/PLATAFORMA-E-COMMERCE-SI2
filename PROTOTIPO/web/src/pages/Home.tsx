@@ -7,7 +7,7 @@
 // Ahora los destacados se piden al catalogo de verdad, con la misma funcion
 // que usa la pagina del catalogo. Asi lo que sale en la portada es lo que
 // hay en la tienda, con su foto de verdad y su precio de verdad.
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarClock, ChevronRight, Package, ScanLine, SlidersHorizontal } from 'lucide-react';
 import { api, type ItemCatalogoPublico } from '@/lib/api.js';
@@ -214,6 +214,151 @@ function MiniTarjeta({ item }: { item: ItemCatalogoPublico }) {
   );
 }
 
+/**
+ * Carrusel de las prendas destacadas, para la parte derecha del cinturon.
+ *
+ * Por que un carrusel y no una prenda girando: una foto plana no se puede
+ * girar en dos dimensiones sin que se note que es falsa, y eso abarata la
+ * tienda. Ademas el catalogo solo tiene un modelo 3D, y apunta a una pagina
+ * de Sketchfab que no se puede embeber. Un carrusel de prendas reales, con su
+ * precio y su oferta, dice lo que la tienda vende en vez de adornar el hueco.
+ *
+ * Los seis apuntadores del teclado funcionan, el carrusel se para cuando el
+ * raton esta encima, y respeta la preferencia del sistema de reducir el
+ * movimiento.
+ */
+function CarruselDestacados({ items }: { items: ItemCatalogoPublico[] }) {
+  const [indice, setIndice] = useState(0);
+  const [parado, setParado] = useState(false);
+  const [imagenRota, setImagenRota] = useState(false);
+
+  // Si alguien los prefieren menos movimiento, no se mueve solo. El sistema lo
+  // dice en una preferencia del navegador y es una falta de respeto ignorarla.
+  const [sinMovimiento] = useState(
+    () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
+  );
+
+  const total = items.length;
+  const actual = items[indice];
+
+  useEffect(() => {
+    if (sinMovimiento) return;
+    if (parado || total < 2) return;
+    const id = setInterval(() => {
+      setIndice((i) => (i + 1) % total);
+    }, 5000);
+    return () => clearInterval(id);
+  }, [parado, sinMovimiento, total]);
+
+  // Cada vez que cambia de prenda se limpia el aviso de foto rota, que era de
+  // la anterior.
+  useEffect(() => {
+    setImagenRota(false);
+  }, [indice]);
+
+  if (total === 0) return null;
+
+  const foto = actual
+    ? resolverImagenProducto({
+        codigo: actual.codigo,
+        nombre: actual.nombre,
+        imagenPrincipal: actual.imagen_principal,
+      })
+    : null;
+  const precio = Number(actual?.precio_final ?? 0);
+  const antes = Number(actual?.precio_con_iva ?? 0);
+  const oferta = (actual?.descuento ?? 0) > 0 && antes > precio;
+
+  // Flechas del teclado, para no tener que usar el raton.
+  function alPulsarTecla(e: KeyboardEvent) {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      setIndice((i) => (i - 1 + total) % total);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      setIndice((i) => (i + 1) % total);
+    }
+  }
+
+  return (
+    <div
+      className="relative w-full max-w-xs sm:max-w-sm"
+      onMouseEnter={() => setParado(true)}
+      onMouseLeave={() => setParado(false)}
+      onFocus={() => setParado(true)}
+      onBlur={() => setParado(false)}
+      onKeyDown={alPulsarTecla}
+      role="group"
+      aria-roledescription="carrusel"
+      aria-label="Prendas destacadas"
+      tabIndex={0}
+    >
+      <div className="relative aspect-4/5 overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-white/20">
+        {/* Sin mix-blend-multiply aqui. Ese filtro multiplica los pixeles de
+            la foto por los del fondo, y como el fondo de la pagina es negro,
+            la prenda salia casi negra. En la tarjeta del catalogo si funciona,
+            porque ahi el fondo es blanco; en el cinturon no. */}
+        {foto && !imagenRota ? (
+          <img
+            key={`${actual.codigo}-${indice}`}
+            src={foto}
+            alt={actual.nombre}
+            className="h-full w-full object-contain p-6"
+            onError={() => setImagenRota(true)}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-7xl" aria-hidden>
+            {emojiDe(actual?.categoria)}
+          </div>
+        )}
+
+        {oferta && (
+          <span className="absolute top-4 right-4 rounded-full bg-accent-500 px-2.5 py-1 text-xs font-extrabold text-ink-950 shadow-xs">
+            -{actual.descuento}%
+          </span>
+        )}
+
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink-950/90 via-ink-950/60 to-transparent px-4 pt-10 pb-4">
+          <p className="text-sm font-bold text-white">{actual.nombre}</p>
+          <div className="mt-0.5 flex items-baseline gap-2">
+            <span className="text-lg font-extrabold text-accent-300">
+              Bs. {MONEDA.format(precio)}
+            </span>
+            {oferta && (
+              <span className="text-xs text-white/60 line-through">Bs. {MONEDA.format(antes)}</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Los puntitos. Cada uno es un boton, para que tambien se pueda ir a la
+          prenda que se quiera, no solo a la siguiente. */}
+      {total > 1 && (
+        <div className="mt-4 flex items-center justify-center gap-2">
+          {items.map((x, i) => (
+            <button
+              key={x.id_producto}
+              type="button"
+              onClick={() => setIndice(i)}
+              aria-label={`Ver ${x.nombre}`}
+              aria-current={i === indice}
+              className={cn(
+                'h-2 rounded-full transition-all',
+                i === indice ? 'w-6 bg-accent-400' : 'w-2 bg-white/30 hover:bg-white/50',
+              )}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* El nombre va tambien fuera, en texto, para quien no ve la imagen. */}
+      <p className="mt-2 text-center text-xs text-white/50">
+        {indice + 1} de {total}
+      </p>
+    </div>
+  );
+}
+
 export function Home() {
   const [items, setItems] = useState<ItemCatalogoPublico[]>([]);
   const [resto, setResto] = useState<ItemCatalogoPublico[]>([]);
@@ -265,36 +410,41 @@ export function Home() {
 
   return (
     <div className="flex flex-col gap-10 pb-4">
+      {/* El cinturon. Antes solo habia un emoji de bolsa de compras gigante y
+          translucido, que no comunicaba nada y hacia ruido de fondo. Ahora hay
+          dos columnas: el texto a la izquierda y las prendas de verdad a la
+          derecha, en un carrusel. */}
       <section className="relative -mx-4 overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-800 via-ink-950 to-black px-6 py-10 sm:mx-0 sm:px-10 sm:py-14">
-        <div className="relative z-10 max-w-xl">
-          <Badge variant="accent" className="mb-4 border-accent-300/40 bg-accent-400/15 text-accent-200">
-            <SparklesIcon /> Nuevo: Vestidor Virtual
-          </Badge>
-          <h1 className="text-3xl leading-tight font-extrabold text-white sm:text-4xl">
-            Pruébate la ropa antes de comprarla.
-          </h1>
-          <p className="mt-3 max-w-md text-sm text-brand-100 sm:text-base">
-            Descubre el catálogo de temporada y usa nuestro vestidor con realidad aumentada para ver cómo te
-            queda cualquier prenda.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/catalogo">
-              <Button
-                size="lg"
-                className="bg-accent-500 text-ink-950 hover:bg-accent-400 active:bg-accent-600"
-              >
-                <ScanLine size={18} /> Probar en vestidor
-              </Button>
-            </Link>
-            <Link to="/catalogo">
-              <Button size="lg" variant="secondary" className="bg-white/15 text-white hover:bg-white/25">
-                Ver catálogo
-              </Button>
-            </Link>
+        <div className="relative z-10 flex flex-col items-center gap-10 lg:flex-row lg:justify-between">
+          <div className="max-w-xl text-center lg:text-left">
+            <Badge variant="accent" className="mb-4 border-accent-300/40 bg-accent-400/15 text-accent-200">
+              <span aria-hidden>✨</span> Nuevo: Vestidor Virtual
+            </Badge>
+            <h1 className="text-3xl leading-tight font-extrabold text-white sm:text-4xl">
+              Pruébate la ropa antes de comprarla.
+            </h1>
+            <p className="mt-3 text-sm text-brand-100 sm:text-base">
+              Descubre el catálogo de temporada y usa nuestro vestidor con realidad aumentada para ver cómo te
+              queda cualquier prenda.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3 lg:justify-start">
+              <Link to="/catalogo">
+                <Button
+                  size="lg"
+                  className="bg-accent-500 text-ink-950 hover:bg-accent-400 active:bg-accent-600"
+                >
+                  <ScanLine size={18} /> Probar en vestidor
+                </Button>
+              </Link>
+              <Link to="/catalogo">
+                <Button size="lg" variant="secondary" className="bg-white/15 text-white hover:bg-white/25">
+                  Ver catálogo
+                </Button>
+              </Link>
+            </div>
           </div>
-        </div>
-        <div className="pointer-events-none absolute -right-10 -bottom-16 select-none text-[16rem] opacity-15">
-          🛍️
+
+          <CarruselDestacados items={items} />
         </div>
       </section>
 
@@ -436,8 +586,4 @@ export function Home() {
       </section>
     </div>
   );
-}
-
-function SparklesIcon() {
-  return <span aria-hidden>✨</span>;
 }
