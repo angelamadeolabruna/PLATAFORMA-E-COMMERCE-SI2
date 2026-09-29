@@ -23,15 +23,13 @@ interface Fila {
   ruta: string | null;
   estado: 'cargando' | 'ok' | 'error';
   detalle: string;
-  // De donde sale la foto: una descarga real, un dibujo de apoyo o lo que
-  // dice la base de datos. Se muestra para que se vea de inmediato cual
-  // esta mandando y cual hay que cambiar.
-  origen: 'foto' | 'dibujo' | 'base de datos' | 'ninguna';
+  // De donde sale la foto: la que se descargó o lo que dice la base de
+  // datos. Se muestra para que se vea de inmediato cual esta mandando.
+  origen: 'foto' | 'base de datos' | 'ninguna';
 }
 
 const TEXTO_ORIGEN: Record<Fila['origen'], string> = {
-  foto: 'foto descargada',
-  dibujo: 'DIBUJO, hay que cambiarlo',
+  foto: 'foto',
   'base de datos': 'base de datos',
   ninguna: 'sin foto',
 };
@@ -194,7 +192,7 @@ export function ComprobarFotos() {
 
   const ok = filas.filter((f) => f.estado === 'ok').length;
   const conError = filas.filter((f) => f.estado === 'error').length;
-  const dibujos = filas.filter((f) => f.origen === 'dibujo').length;
+  const sinFoto = filas.filter((f) => f.origen === 'ninguna').length;
   const conFoto = filas.filter((f) => f.origen === 'foto').length;
 
   return (
@@ -242,36 +240,34 @@ export function ComprobarFotos() {
         </p>
       </section>
 
-      {/* Este aviso es lo primero que hay que leer: dice si la tienda esta
-          enseñando una foto de verdad o un dibujo de relleno. */}
-      {!comprobando && filas.length > 0 && dibujos > 0 && (
+      {/* Este aviso es lo primero que hay que leer: dice si la tienda se ve
+          con una foto de verdad o si le falta alguna. */}
+      {!comprobando && filas.length > 0 && sinFoto > 0 && (
         <section className="rounded-2xl border border-warning-500/40 bg-warning-50 p-5">
           <h2 className="text-sm font-semibold text-warning-500">
-            Faltan {dibujos} de {filas.length} fotos por descargar
+            Faltan {sinFoto} de {filas.length} fotos
           </h2>
           <p className="mt-1 text-sm text-warning-500">
             {conFoto > 0
-              ? `${conFoto} ya ${conFoto === 1 ? 'tiene' : 'tienen'} foto descargada.`
-              : 'Ninguna tiene foto descargada todavía.'}{' '}
-            Las que salen marcadas como <strong>DIBUJO</strong> son las ilustraciones de relleno.
-            Para la presentación hay que sustituirlas por fotos reales: deja cada fichero en{' '}
+              ? `${conFoto} ${conFoto === 1 ? 'tiene' : 'tienen'} foto.`
+              : 'Ninguna tiene foto todavía.'}{' '}
+            Para ponerla, deja el fichero en{' '}
             <code className="rounded bg-white/20 px-1.5 py-0.5 font-mono text-xs">
               public/productos
             </code>{' '}
-            con el nombre de <code className="rounded bg-white/20 px-1.5 py-0.5 font-mono text-xs">FOTOS-AQUI.txt</code>{' '}
             y añade la línea en{' '}
             <code className="rounded bg-white/20 px-1.5 py-0.5 font-mono text-xs">src/lib/fotos.ts</code>.
           </p>
         </section>
       )}
 
-      {!comprobando && filas.length > 0 && dibujos === 0 && conFoto === filas.length && (
+      {!comprobando && filas.length > 0 && sinFoto === 0 && (
         <section className="rounded-2xl border border-success-500/30 bg-success-50 p-5">
           <h2 className="text-sm font-semibold text-success-600">
-            Las {filas.length} prendas tienen foto descargada
+            Las {filas.length} prendas tienen foto
           </h2>
           <p className="mt-1 text-sm text-success-600">
-            No queda ningún dibujo de relleno. La tienda se ve con fotos reales.
+            No falta ninguna. La tienda se ve con fotos reales.
           </p>
         </section>
       )}
@@ -319,7 +315,7 @@ export function ComprobarFotos() {
                         'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase',
                         f.origen === 'foto'
                           ? 'bg-success-50 text-success-600'
-                          : f.origen === 'dibujo'
+                          : f.origen === 'ninguna'
                             ? 'bg-warning-50 text-warning-500'
                             : 'bg-ink-100 text-ink-500',
                       )}
