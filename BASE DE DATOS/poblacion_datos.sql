@@ -604,8 +604,18 @@ INSERT INTO producto_talla_color (id_ptc, id_producto, id_talla, id_color, estad
 
 
 -- =====================================================================
--- 31. IMAGENES DE PRODUCTO  ·  40 filas
+-- 31. IMAGENES DE PRODUCTO
 -- =====================================================================
+--
+-- OJO, estas 40 filas apuntan a un CDN que no existe:
+-- https://cdn.tiendasmontano.bo/...  nunca estuvo desplegado, asi que
+-- cargar este seed deja el catalogo con tarjetas en blanco, porque el
+-- navegador no encuentra el fichero y la tarjeta no tiene donde mirar.
+--
+-- Las imagenes que si funcionan son las de web/public/productos/, que se
+-- insertan al final de este fichero y apuntan a ficheros de verdad. Si se
+-- necesita el volumen de datos de ejemplo, conviene cargar estas imagenes y
+-- no las del CDN.
 
 INSERT INTO producto_imagenes (id_imagen, id_producto, id_color, url, es_principal, orden) VALUES
   ( 1,  1, 2, 'https://cdn.tiendasmontano.bo/p/1/2/1.jpg', true,  1),
@@ -1213,6 +1223,7 @@ SELECT 'usuarios_roles',    COUNT(*) FROM usuarios_roles    UNION ALL
 SELECT 'clientes',          COUNT(*) FROM clientes          UNION ALL
 SELECT 'productos',         COUNT(*) FROM productos         UNION ALL
 SELECT 'producto_talla_color', COUNT(*) FROM producto_talla_color UNION ALL
+SELECT 'producto_imagenes',   COUNT(*) FROM producto_imagenes   UNION ALL
 SELECT 'inventario_stock',  COUNT(*) FROM inventario_stock  UNION ALL
 SELECT 'reservas',          COUNT(*) FROM reservas          UNION ALL
 SELECT 'ventas',            COUNT(*) FROM ventas            UNION ALL

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge.js';
@@ -13,27 +14,32 @@ export function ProductCard({ producto }: Props) {
   const conDescuento = producto.descuento !== null && producto.descuento !== undefined;
   const link = producto.codigo ? `/productos/${encodeURIComponent(producto.codigo)}` : '/catalogo';
 
+  // Si la imagen no existe o no se puede cargar, se marca aqui y se dibuja el
+  // emoji en su lugar. Antes solo se ocultaba la etiqueta y la tarjeta se
+  // quedaba en blanco, sin explicar nada al cliente que la estaba mirando.
+  const [imagenRota, setImagenRota] = useState(false);
+  const mostrarEmoji = !producto.imagen || imagenRota;
+
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-ink-100 bg-white shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-card-hover">
       <Link
         to={link}
         className="relative flex aspect-[4/5] w-full items-center justify-center overflow-hidden bg-gradient-to-b from-neutral-50 via-slate-50 to-neutral-100/70 p-4"
       >
-        {producto.imagen ? (
+        {mostrarEmoji ? (
+          <span className="text-7xl transition-transform duration-300 group-hover:scale-110" aria-hidden>
+            {producto.emoji}
+          </span>
+        ) : (
           <img
+            key={producto.imagen}
             src={producto.imagen}
             alt={producto.nombre}
             loading="lazy"
             decoding="async"
             className="h-full w-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105 select-none"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = 'none';
-            }}
+            onError={() => setImagenRota(true)}
           />
-        ) : (
-          <span className="text-7xl transition-transform duration-300 group-hover:scale-110" aria-hidden>
-            {producto.emoji}
-          </span>
         )}
 
         {conDescuento && (

@@ -1,0 +1,122 @@
+[
+  {
+    "id_imagen": 3,
+    "id_producto": 1,
+    "id_color": 2,
+    "url": "/productos/polera/blanca.png",
+    "es_principal": false,
+    "orden": 2
+  },
+  {
+    "id_imagen": 4,
+    "id_producto": 1,
+    "id_color": 6,
+    "url": "/productos/polera/gris.png",
+    "es_principal": false,
+    "orden": 3
+  },
+  {
+    "id_imagen": 6,
+    "id_producto": 4,
+    "id_color": 4,
+    "url": "/productos/chino/azul.png",
+    "es_principal": false,
+    "orden": 2
+  },
+  {
+    "id_imagen": 8,
+    "id_producto": 5,
+    "id_color": 8,
+    "url": "/productos/vestido/rosa.png",
+    "es_principal": false,
+    "orden": 2
+  },
+  {
+    "id_imagen": 9,
+    "id_producto": 6,
+    "id_color": 1,
+    "url": "/productos/campera/negra.png",
+    "es_principal": true,
+    "orden": 1
+  },
+  {
+    "id_imagen": 10,
+    "id_producto": 6,
+    "id_color": 6,
+    "url": "/productos/campera/gris.png",
+    "es_principal": false,
+    "orden": 2
+  },
+  {
+    "id_imagen": 11,
+    "id_producto": 7,
+    "id_color": 3,
+    "url": "/productos/polo/roja.png",
+    "es_principal": true,
+    "orden": 1
+  },
+  {
+    "id_imagen": 12,
+    "id_producto": 7,
+    "id_color": 4,
+    "url": "/productos/polo/azul.png",
+    "es_principal": false,
+    "orden": 2
+  },
+  {
+    "id_imagen": 13,
+    "id_producto": 8,
+    "id_color": 8,
+    "url": "/productos/pijama/rosa.png",
+    "es_principal": true,
+    "orden": 1
+  },
+  {
+    "id_imagen": 14,
+    "id_producto": 8,
+    "id_color": 5,
+    "url": "/productos/pijama/verde.png",
+    "es_principal": false,
+    "orden": 2
+  },
+  {
+    "id_imagen": 15,
+    "id_producto": 9,
+    "id_color": 1,
+    "url": "/productos/zapatilla/negra.png",
+    "es_principal": true,
+    "orden": 1
+  },
+  {
+    "id_imagen": 16,
+    "id_producto": 9,
+    "id_color": 2,
+    "url": "/productos/zapatilla/blanca.png",
+    "es_principal": false,
+    "orden": 2
+  },
+  {
+    "id_imagen": 19,
+    "id_producto": 1,
+    "id_color": null,
+    "url": "data:image/jpeg;base64,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",
+    "es_principal": true,
+    "orden": 1
+  },
+  {
+    "id_imagen": 20,
+    "id_producto": 4,
+    "id_color": null,
+    "url": "https://www.careofcarl.com/bilder/artiklar/zoom/22268211r_3.jpg?m=1668517786",
+    "es_principal": true,
+    "orden": 1
+  },
+  {
+    "id_imagen": 21,
+    "id_producto": 5,
+    "id_color": null,
+    "url": "https://m.media-amazon.com/images/I/51XtYEgw4BL._AC_SY550_.jpg",
+    "es_principal": true,
+    "orden": 1
+  }
+]

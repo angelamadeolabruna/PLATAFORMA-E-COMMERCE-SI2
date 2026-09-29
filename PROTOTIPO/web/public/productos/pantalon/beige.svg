@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" width="400" height="500" role="img" aria-label="Ilustración de la prenda">
+  <defs>
+    <linearGradient id="gpantalonbeige" x1="0" y1="0" x2="1" y2="0.35">
+      <stop offset="0" stop-color="#e8d4b0"/>
+      <stop offset="0.55" stop-color="#d7c4a3"/>
+      <stop offset="1" stop-color="#b0a186"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="200" cy="456" rx="104" ry="11" fill="#0f172a" opacity="0.09"/>
+  <path d="M128 78 L272 78 L274 124 L266 252 L284 430 L212 430 L200 248 L188 430 L116 430 L134 252 L126 124 Z" fill="url(#gpantalonbeige)" stroke="#978972" stroke-width="2.2" stroke-linejoin="round" />
+  <path d="M126 114 L274 114" fill="none" stroke="#978972" stroke-width="2.4" stroke-linecap="round" opacity="0.58"/>
+  <path d="M200 114 L200 140" fill="none" stroke="#978972" stroke-width="1.7" stroke-linecap="round" opacity="0.45"/>
+  <circle cx="200" cy="97" r="4" fill="#978972" opacity="0.72"/>
+  <path d="M200 248 L200 430" fill="none" stroke="#978972" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+  <path d="M138 132 L145 300" fill="none" stroke="#978972" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+  <path d="M262 132 L255 300" fill="none" stroke="#978972" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+  <path d="M116 430 L188 430" fill="none" stroke="#978972" stroke-width="2.6" stroke-linecap="round" opacity="0.35"/>
+  <path d="M212 430 L284 430" fill="none" stroke="#978972" stroke-width="2.6" stroke-linecap="round" opacity="0.35"/>
+</svg>

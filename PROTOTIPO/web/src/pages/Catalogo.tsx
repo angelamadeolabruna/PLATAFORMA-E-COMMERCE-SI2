@@ -35,6 +35,27 @@ import { VestidorRa, type PrendaVestidorRa } from '@/components/ra/VestidorRa.js
 
 const LIMITE = 20;
 
+// Emoji de reserva, para cuando un producto no tiene imagen. Antes salia
+// siempre el de abrigo, que no correspondia a un pantalon ni a unas
+// zapatillas y despistaba mas que ayudaba.
+const EMOJI_POR_CATEGORIA: Array<[RegExp, string]> = [
+  [/zapat|calzado|sandal/i, '👟'],
+  [/pantalon|chino|jean|pantal/i, '👖'],
+  [/vestido|falda/i, '👗'],
+  [/pijama|batik|sudadera|buzo/i, '🧥'],
+  [/campera|abrigo|chaqueta|coat/i, '🧥'],
+  [/polo|polera|remera|camiseta|camisa|blusa|t-shirt/i, '👕'],
+  [/ropa de|hombre|mujer|niño|niña/i, '👕'],
+];
+
+function emojiDe(categoria: string | null | undefined): string {
+  if (!categoria) return '👕';
+  for (const [patron, emoji] of EMOJI_POR_CATEGORIA) {
+    if (patron.test(categoria)) return emoji;
+  }
+  return '👕';
+}
+
 function Precio({ valor }: { valor: number }) {
   return (
     <span className="text-xl font-extrabold text-brand-700">
@@ -72,6 +93,13 @@ function TarjetaPrenda({
       imagenPrincipal: item.imagen_principal,
     });
   }, [item, colorHover]);
+
+  // Se reinicia cada vez que el producto o el color cambian, para que al
+  // elegir otro color vuelva a intentarse la carga de su imagen.
+  const [imagenRota, setImagenRota] = useState(false);
+  useEffect(() => {
+    setImagenRota(false);
+  }, [imagenMostrada]);
 
   const agregarAlCarrito = async () => {
     setErrorAgregar(null);
@@ -111,17 +139,24 @@ function TarjetaPrenda({
       >
         {imagenMostrada ? (
           <img
+            key={imagenMostrada}
             src={imagenMostrada}
             alt={item.nombre}
             loading="lazy"
             decoding="async"
             className="h-full w-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105 select-none"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = 'none';
-            }}
+            /* Si el fichero no existe, se avisa con onError y la tarjeta pasa a
+               mostrar el emoji. Antes solo se ocultaba la etiqueta y el hueco
+               se quedaba vacio, sin explicar nada. El key fuerza a volver a
+               montar la imagen cuando el cliente cambia de color. */
+            onError={() => setImagenRota(true)}
           />
-        ) : (
-          <span className="text-6xl opacity-50">🧥</span>
+        ) : null}
+
+        {(imagenRota || !imagenMostrada) && (
+          <span className="text-6xl opacity-50" aria-hidden>
+            {emojiDe(item.categoria)}
+          </span>
         )}
 
         {/* Floating Category Badge */}

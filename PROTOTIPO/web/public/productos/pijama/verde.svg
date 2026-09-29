@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" width="400" height="500" role="img" aria-label="Ilustración de la prenda">
+  <defs>
+    <linearGradient id="gpijamaverde" x1="0" y1="0" x2="1" y2="0.35">
+      <stop offset="0" stop-color="#328736"/>
+      <stop offset="0.55" stop-color="#2e7d32"/>
+      <stop offset="1" stop-color="#266729"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="200" cy="456" rx="104" ry="11" fill="#0f172a" opacity="0.09"/>
+  <path d="M150 60 C158 88 242 88 250 60 L290 72 L338 106 L352 182 L298 198 L288 152 L288 356 L112 356 L112 152 L102 198 L48 182 L62 106 L110 72 Z" fill="url(#gpijamaverde)" stroke="#1e5321" stroke-width="2.2" stroke-linejoin="round" />
+  <path d="M150 60 C160 82 178 92 200 92 C222 92 240 82 250 60 L244 54 C232 72 214 80 200 80 C186 80 168 72 156 54 Z" fill="#1e5321" opacity="0.3"/>
+  <path d="M200 92 L200 356" fill="none" stroke="#1e5321" stroke-width="2.4" stroke-linecap="round" opacity="0.55"/>
+  <path d="M130 204 L270 204" fill="none" stroke="#1e5321" stroke-width="1.4" stroke-linecap="round" opacity="0.32"/>
+  <path d="M130 252 L270 252" fill="none" stroke="#1e5321" stroke-width="1.4" stroke-linecap="round" opacity="0.32"/>
+  <path d="M130 300 L270 300" fill="none" stroke="#1e5321" stroke-width="1.4" stroke-linecap="round" opacity="0.32"/>
+  <circle cx="200" cy="126" r="3.2" fill="#1e5321" opacity="0.62"/>
+  <circle cx="200" cy="176" r="3.2" fill="#1e5321" opacity="0.62"/>
+  <circle cx="200" cy="228" r="3.2" fill="#1e5321" opacity="0.62"/>
+  <circle cx="200" cy="276" r="3.2" fill="#1e5321" opacity="0.62"/>
+  <circle cx="200" cy="326" r="3.2" fill="#1e5321" opacity="0.62"/>
+  <path d="M112 356 L288 356" fill="none" stroke="#1e5321" stroke-width="3.4" stroke-linecap="round" opacity="0.4"/>
+  <path d="M62 106 L112 152" fill="none" stroke="#1e5321" stroke-width="1.3" stroke-linecap="round" opacity="0.38"/>
+  <path d="M338 106 L288 152" fill="none" stroke="#1e5321" stroke-width="1.3" stroke-linecap="round" opacity="0.38"/>
+</svg>
