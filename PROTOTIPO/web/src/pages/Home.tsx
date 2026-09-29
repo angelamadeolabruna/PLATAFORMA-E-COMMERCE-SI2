@@ -17,6 +17,16 @@ import { cn } from '@/lib/utils.js';
 import { Button } from '@/components/ui/Button.js';
 import { Badge } from '@/components/ui/Badge.js';
 
+// Cuantos destacados entran en la portada. Cuatro, que es lo que cabe en una
+// rejilla de cuatro columnas. Poner mas llenaba la portada de prendas y
+// dejaba de ser un destacado para ser el catalogo entero.
+const CUANTOS_DESTACADOS = 4;
+
+const MONEDA = new Intl.NumberFormat('es-BO', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 const CATEGORIAS = [
   { nombre: 'Hombre', emoji: '👔',Classes: '' },
   { nombre: 'Mujer', emoji: '👗', classes: '' },
@@ -54,7 +64,11 @@ function Tarjeta({ item }: { item: ItemCatalogoPublico }) {
     [item],
   );
 
-  const precio = Number(item.precio_con_iva ?? item.precio_base ?? 0);
+  // precio_final es el precio con descuento, y es el que se cobra. El
+  // precio_con_iva es el precio entero, que es el que se tacha al lado.
+  const final = Number(item.precio_final ?? item.precio_con_iva ?? 0);
+  const antes = Number(item.precio_con_iva ?? 0);
+  const hayOferta = item.descuento > 0 && antes > final;
   const colores = (item.colores ?? []) as Array<string | { nombre: string; codigo_hex?: string | null }>;
 
   return (
@@ -84,6 +98,17 @@ function Tarjeta({ item }: { item: ItemCatalogoPublico }) {
             {item.categoria}
           </Badge>
         )}
+
+        {/* La oferta va arriba a la derecha, que es donde mira la gente
+            primero en una tienda de verdad. */}
+        {hayOferta && (
+          <Badge
+            variant="accent"
+            className="absolute top-3 right-3 bg-accent-500 font-bold text-ink-950 shadow-xs"
+          >
+            -{item.descuento}%
+          </Badge>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-1.5 p-4">
@@ -95,16 +120,15 @@ function Tarjeta({ item }: { item: ItemCatalogoPublico }) {
           <div className="flex items-center gap-1.5">
             {colores.slice(0, 4).map((c, i) => {
               const nombre = typeof c === 'string' ? c : c.nombre;
+              const hex = hexDeColor(nombre, typeof c === 'string' ? null : c.codigo_hex);
               return (
                 <span
                   key={`${nombre}-${i}`}
                   title={nombre}
-                  style={{ backgroundColor: hexDeColor(nombre, typeof c === 'string' ? null : c.codigo_hex) }}
+                  style={{ backgroundColor: hex }}
                   className={cn(
                     'h-3.5 w-3.5 rounded-full ring-1',
-                    hexDeColor(nombre, typeof c === 'string' ? null : c.codigo_hex) === '#f5f5f5'
-                      ? 'ring-ink-300'
-                      : 'ring-black/10',
+                    hex === '#f5f5f5' ? 'ring-ink-300' : 'ring-black/10',
                   )}
                 />
               );
@@ -115,9 +139,76 @@ function Tarjeta({ item }: { item: ItemCatalogoPublico }) {
           </div>
         )}
 
-        <p className="mt-auto pt-2 text-base leading-none font-extrabold text-brand-700">
-          Bs. {new Intl.NumberFormat('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(precio)}
-        </p>
+        <div className="mt-auto flex flex-wrap items-baseline gap-2 pt-2">
+          <p className="text-base leading-none font-extrabold text-brand-700">
+            Bs. {MONEDA.format(final)}
+          </p>
+          {hayOferta && (
+            <p className="text-xs leading-none text-ink-400 line-through">
+              Bs. {MONEDA.format(antes)}
+            </p>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+/** Tarjeta pequena para el bloque de "tambien te puede interesar". Solo
+ *  foto, nombre y precio, porque aqui no se compra, se mira. */
+function MiniTarjeta({ item }: { item: ItemCatalogoPublico }) {
+  const [rota, setRota] = useState(false);
+  const foto = useMemo(
+    () =>
+      resolverImagenProducto({
+        codigo: item.codigo,
+        nombre: item.nombre,
+        imagenPrincipal: item.imagen_principal,
+      }),
+    [item],
+  );
+  const final = Number(item.precio_final ?? item.precio_con_iva ?? 0);
+  const antes = Number(item.precio_con_iva ?? 0);
+  const hayOferta = item.descuento > 0 && antes > final;
+
+  return (
+    <Link
+      to={`/productos/${encodeURIComponent(item.codigo)}`}
+      className="group flex flex-col overflow-hidden rounded-xl border border-ink-200 bg-white transition hover:border-brand-300 hover:shadow-card"
+    >
+      <div className="relative flex aspect-square items-center justify-center bg-gradient-to-b from-neutral-50 to-neutral-100/70 p-2">
+        {foto && !rota ? (
+          <img
+            key={foto}
+            src={foto}
+            alt={item.nombre}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-105"
+            onError={() => setRota(true)}
+          />
+        ) : (
+          <span className="text-4xl" aria-hidden>
+            {emojiDe(item.categoria)}
+          </span>
+        )}
+        {hayOferta && (
+          <Badge
+            variant="accent"
+            className="absolute top-1.5 right-1.5 bg-accent-500 px-1.5 py-0.5 text-[10px] font-bold text-ink-950"
+          >
+            -{item.descuento}%
+          </Badge>
+        )}
+      </div>
+      <div className="p-2.5">
+        <p className="line-clamp-1 text-xs font-semibold text-ink-900">{item.nombre}</p>
+        <div className="mt-1 flex items-baseline gap-1.5">
+          <span className="text-sm font-extrabold text-brand-700">Bs. {MONEDA.format(final)}</span>
+          {hayOferta && (
+            <span className="text-[10px] text-ink-400 line-through">Bs. {MONEDA.format(antes)}</span>
+          )}
+        </div>
       </div>
     </Link>
   );
@@ -125,6 +216,7 @@ function Tarjeta({ item }: { item: ItemCatalogoPublico }) {
 
 export function Home() {
   const [items, setItems] = useState<ItemCatalogoPublico[]>([]);
+  const [resto, setResto] = useState<ItemCatalogoPublico[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -136,22 +228,36 @@ export function Home() {
 
   useEffect(() => {
     let vivo = true;
-    // Se piden ocho, que es lo que cabe en la rejilla de la portada.
-    api
-      .listarCatalogoPublico({ limite: 8, pagina: 1 })
-      .then((res) => {
+
+    // Se piden dos cosas en paralelo: los destacados para el bloque
+    // principal, y el resto del catalogo para la fila de abajo. Sin esto, la
+    // portada era una sola lista con las siete prendas y el titulo
+    // "destacados" no significaba nada.
+    Promise.all([
+      api.listarCatalogoPublico({ solo_destacados: true, limite: CUANTOS_DESTACADOS, pagina: 1 }),
+      api.listarCatalogoPublico({ limite: 6, pagina: 1 }),
+    ])
+      .then(([destacados, todos]) => {
         if (!vivo) return;
-        setItems((res?.items ?? []).slice(0, 8));
+        const enDestacado = destacados?.items ?? [];
+        setItems(enDestacado.slice(0, CUANTOS_DESTACADOS));
+
+        // Del catalogo completo se quitan las que ya salen como destacadas,
+        // para no repetir la misma prenda dos veces en la portada.
+        const codigos = new Set(enDestacado.map((x) => x.codigo));
+        setResto((todos?.items ?? []).filter((x) => !codigos.has(x.codigo)).slice(0, 6));
         setError(null);
       })
       .catch((e: unknown) => {
         if (!vivo) return;
         setItems([]);
+        setResto([]);
         setError(e instanceof Error ? e.message : 'No se pudo cargar los destacados.');
       })
       .finally(() => {
         if (vivo) setCargando(false);
       });
+
     return () => {
       vivo = false;
     };
@@ -283,7 +389,9 @@ export function Home() {
           </div>
         ) : items.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-ink-300 bg-ink-50 px-4 py-10 text-center">
-            <p className="text-sm text-ink-500">Ahora mismo no hay prendas en el catálogo.</p>
+            <p className="text-sm text-ink-500">
+              Ahora mismo no hay prendas destacadas. Míralas todas en el catálogo.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -293,6 +401,28 @@ export function Home() {
           </div>
         )}
       </section>
+
+      {/* Los que no son destacados van aparte, en una fila discreta. Así se ve
+          que la tienda tiene más cosas sin que el bloque de destacados
+          parezca el catálogo entero. */}
+      {resto.length > 0 && (
+        <section>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-extrabold text-ink-900">También te puede interesar</h2>
+            <Link
+              to="/catalogo"
+              className="flex items-center gap-0.5 text-sm font-semibold text-brand-600 hover:text-brand-700"
+            >
+              Ver todos <ChevronRight size={16} />
+            </Link>
+          </div>
+          <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+            {resto.map((item) => (
+              <MiniTarjeta key={item.id_producto} item={item} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-brand-200 bg-brand-50/60 p-8 text-center">
         <SlidersHorizontal className="text-brand-600" size={28} />

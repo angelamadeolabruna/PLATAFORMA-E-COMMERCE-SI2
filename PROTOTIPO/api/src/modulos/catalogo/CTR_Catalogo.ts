@@ -35,6 +35,10 @@ export class CatalogoController {
       temporada: this.entero(query.temporada),
       precioMin,
       precioMax,
+      // La portada pide solo_destacados=true para traerse el bloque de
+      // destacados. Se acepta cualquiera de las dos formas de escribirlo,
+      // porque el frontend lo manda con guion bajo.
+      soloDestacados: query.solo_destacados === 'true' || query.solo_destacados === '1',
       pagina,
       limite,
     };

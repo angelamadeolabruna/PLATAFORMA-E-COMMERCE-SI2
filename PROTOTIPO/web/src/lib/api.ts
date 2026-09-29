@@ -236,6 +236,12 @@ export interface ItemCatalogoPublico {
   porcentaje_iva: number;
   categoria: string | null;
   imagen_principal: string | null;
+  /** Si la prenda entra en el bloque de destacados de la portada. */
+  destacado: boolean;
+  /** Porcentaje de descuento, de 0 a 90. */
+  descuento: number;
+  /** Precio con el descuento aplicado. Es el que se cobra. */
+  precio_final: number;
   tallas: string[];
   colores: string[];
 }
@@ -260,6 +266,8 @@ export interface FiltrosCatalogoPublico {
   temporada?: number;
   precio_min?: number;
   precio_max?: number;
+  /** Trae solo las prendas marcadas como destacadas, para la portada. */
+  solo_destacados?: boolean;
   pagina?: number;
   limite?: number;
 }

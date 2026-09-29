@@ -53,6 +53,8 @@ export interface FiltrosPublico {
   temporada?: number;
   precioMin?: number;
   precioMax?: number;
+  /** Trae solo las prendas marcadas como destacadas, para la portada. */
+  soloDestacados?: boolean;
   pagina: number;
   limite: number;
 }
@@ -66,6 +68,12 @@ export interface ItemCatalogoPublico {
   porcentaje_iva: number;
   categoria: string | null;
   imagen_principal: string | null;
+  /** Si la prenda entra en el bloque de destacados de la portada. */
+  destacado: boolean;
+  /** Porcentaje de descuento, de 0 a 90. */
+  descuento: number;
+  /** Precio con el descuento aplicado. Es el que se cobra de verdad. */
+  precio_final: number;
   tallas: string[];
   colores: string[];
 }
@@ -243,6 +251,11 @@ export class CatalogoService {
     if (f.precioMin !== undefined) partes.push(`p.precio_base >= ${push(f.precioMin)}`);
     if (f.precioMax !== undefined) partes.push(`p.precio_base <= ${push(f.precioMax)}`);
 
+    // Solo los destacados, que es lo que pide la portada para el bloque
+    // "Destacados de la semana". Sin esto, la portada recibia el catalogo
+    // entero, con lo que destacados no significaba nada.
+    if (f.soloDestacados) partes.push(`p.destacado = true`);
+
     return { clausula: partes.join('\n AND '), params };
   }
 
@@ -262,6 +275,10 @@ export class CatalogoService {
       `SELECT DISTINCT p.id_producto, p.codigo, p.nombre,
               ROUND(p.precio_base * (1 + p.porcentaje_iva / 100.0), 2) AS precio_con_iva,
               p.precio_base, p.porcentaje_iva, c.nombre AS categoria,
+              p.destacado, p.descuento,
+              ROUND(
+                p.precio_base * (1 + p.porcentaje_iva / 100.0) * (1 - p.descuento / 100.0),
+              2) AS precio_final,
               (SELECT pi.url FROM producto_imagenes pi
                 WHERE pi.id_producto = p.id_producto AND pi.es_principal = true
                 ORDER BY pi.orden ASC, pi.id_imagen ASC LIMIT 1) AS imagen_principal
@@ -279,6 +296,9 @@ export class CatalogoService {
       precio_base: string;
       porcentaje_iva: string;
       categoria: string | null;
+      destacado: boolean;
+      descuento: number;
+      precio_final: string;
       imagen_principal: string | null;
     }>;
 
@@ -314,6 +334,9 @@ export class CatalogoService {
         precio_base: Number(f.precio_base),
         porcentaje_iva: Number(f.porcentaje_iva),
         categoria: f.categoria,
+        destacado: f.destacado,
+        descuento: Number(f.descuento),
+        precio_final: Number(f.precio_final),
         imagen_principal: f.imagen_principal,
         tallas: mapaCombos.get(f.id_producto)?.tallas_disponibles ?? [],
         colores: mapaCombos.get(f.id_producto)?.colores_disponibles ?? [],
