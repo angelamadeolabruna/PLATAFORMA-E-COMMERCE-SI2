@@ -1,6 +1,5 @@
 import { type ReactNode } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { LayoutRaiz } from '@/components/layout/LayoutRaiz.js';
 import { AdminLayout } from '@/components/layout/admin/AdminLayout.js';
 import { ClienteLayout } from '@/components/layout/cliente/ClienteLayout.js';
 import { Home } from '@/pages/Home.js';
@@ -49,7 +48,11 @@ function Placeholder({ titulo }: { titulo: string }): ReactNode {
 export function RouterApp() {
   return (
     <Routes>
-      <Route element={<LayoutRaiz />}>
+      {/* Toda la tienda usa ClienteLayout, que lleva la barra, el pie y el
+          panel del carrito. Antes estas rutas usaban LayoutRaiz con el
+          Navbar viejo, y ahi seguia vivo el desplegable de "Mi cuenta" con
+          la flechita: por eso el cliente seguia viendolo en la portada. */}
+      <Route element={<ClienteLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/catalogo" element={<Catalogo />} />
         <Route path="/productos" element={<Navigate to="/catalogo" replace />} />

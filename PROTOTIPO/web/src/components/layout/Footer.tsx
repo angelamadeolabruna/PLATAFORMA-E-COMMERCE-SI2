@@ -1,5 +1,5 @@
 import { Facebook, Instagram, Twitter, Youtube, ShieldCheck, Truck, RefreshCcw, CreditCard } from 'lucide-react';
-import { Logo } from './Navbar.js';
+import { Logo } from './Logo.js';
 
 const categorias = ['Ropa de Hombre', 'Ropa de Mujer', 'Calzado', 'Accesorios', 'Ofertas'];
 const ayuda = ['Centro de ayuda', 'Cómo comprar', 'Envíos y entregas', 'Devoluciones', 'Medios de pago'];

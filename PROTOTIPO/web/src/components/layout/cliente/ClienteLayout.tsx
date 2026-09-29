@@ -1,10 +1,24 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, Menu, Package, Search, ShoppingCart, User, X } from 'lucide-react';
+import {
+  CalendarClock,
+  LogOut,
+  Menu,
+  Package,
+  Receipt,
+  ScanLine,
+  Search,
+  ShoppingCart,
+  Sparkles,
+  User,
+  X,
+} from 'lucide-react';
 import { cn } from '@/lib/utils.js';
 import { useAuth } from '@/contexts/AuthContext.js';
 import { useCart } from '@/contexts/CartContext.js';
 import { CuentaClienteProvider, useCuentaCliente } from '@/contexts/CuentaClienteContext.js';
+import { CartPanel } from '@/components/carrito/CartPanel.js';
+import { Footer } from '@/components/layout/Footer.js';
 import { fecha } from '@/lib/formato.js';
 import logoUrl from '@/assets/logo.png';
 
@@ -16,48 +30,129 @@ type UsuarioMenu = {
 } | null;
 
 /**
- * Acceso a la cuenta del cliente, en la barra superior.
+
+ * Enlaces del cliente, a la derecha del buscador.
  *
- * Antes era un desplegable: un boton con una flechita que abria una lista.
- * El problema es que el cliente no sabe que hay un menu ahi, y si busca sus
- * reservas no se le ocurre pulsarlo. Un desplegable solo lo encuentra quien ya
- * sabe que existe, que es justo quien no lo necesita.
+ * Esto sustituye a las tres cosas que se probaron y no funcionaron:
  *
- * Ahora es un enlace con texto, que es la forma en que la gente busca: si
- * pone el raton encima de algo que pone "Mi cuenta", entiende que ahi estan
- * sus cosas. Sin flechita, porque no hay nada que desplegar.
+ *   - Un menu lateral. Es patron de administracion: el cliente entra a
+ *     comprar, no a gestionar herramientas.
+ *   - Un desplegable. Solo lo encuentra quien ya sabe que esta ahi, y el que
+ *     busca sus reservas es justo el que no lo sabe.
+ *   - Un boton que lleva a "Mi cuenta". Funciona, pero obliga a abandonar la
+ *     pagina y luego volver. El cliente esta en la tienda mirando prendas y
+ *     de pronto esta en otra pantalla.
  *
- * Solo aparece con la sesion iniciada. Para un visitante que no ha entrado no
- * tiene sentido, y por eso su sitio lo ocupa el boton de "Ingresar".
+ * Aqui sus cosas estan siempre a la vista, en una fila, como en Amazon. Es
+ * la forma que menos pasos cuesta: un clic y ya esta en sus reservas, sin
+ * menus y sin cambiar de pagina.
+ *
+ * Solo se pinta con la sesion iniciada. Para un visitante que no ha entrado
+ * no tiene sentido, asi que el sitio entero queda limpio.
+ *
+ * En pantallas grandes van en linea con el buscador. Enmoviles pasan a una
+ * fila propia con desplazamiento horizontal, porque en una sola linea no
+ * caben sin volverse ilegibles.
  */
-function AccesoCuenta({ usuario }: { usuario: UsuarioMenu }) {
-  const { pendientes } = useCuentaCliente();
+function EnlacesCliente() {
+  const { listasParaRecoger, esperandoConfirmacion } = useCuentaCliente();
+  const pendientes = listasParaRecoger.length + esperandoConfirmacion.length;
+
+  const enlaces = [
+    { ruta: '/reservas', etiqueta: 'Reservas', icono: CalendarClock, numero: pendientes },
+    { ruta: '/compras', etiqueta: 'Pedidos', icono: Receipt, numero: 0 },
+    { ruta: '/recomendaciones', etiqueta: 'Recomendaciones', icono: Sparkles, numero: 0 },
+    { ruta: '/reservas/pruebas-ra', etiqueta: 'Pruebas RA', icono: ScanLine, numero: 0 },
+  ];
+
+  return (
+    <>
+      {/* Pantallas grandes: en linea con el buscador. */}
+      <nav className="hidden items-center gap-0.5 xl:flex" aria-label="Mi cuenta">
+        {enlaces.map((e) => (
+          <Link
+            key={e.ruta}
+            to={e.ruta}
+            className="relative flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-[13px] font-semibold text-ink-600 transition-colors hover:bg-ink-50 hover:text-brand-700"
+          >
+            <e.icono size={16} className="text-ink-400" />
+            {e.etiqueta}
+            {e.numero > 0 && (
+              <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-warning-500 px-1 text-[10px] leading-none font-bold text-ink-950">
+                {e.numero}
+              </span>
+            )}
+          </Link>
+        ))}
+      </nav>
+
+      {/* Pantallas pequenas: fila aparte con desplazamiento. Se muestra en
+          md y lg, donde ya no caben en linea con el buscador. */}
+      <div className="w-full overflow-x-auto md:block xl:hidden">
+        <nav className="flex items-center gap-1 pb-2" aria-label="Mi cuenta">
+          {enlaces.map((e) => (
+            <Link
+              key={e.ruta}
+              to={e.ruta}
+              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-ink-200 px-3 py-1.5 text-xs font-semibold text-ink-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+            >
+              <e.icono size={14} className="text-ink-400" />
+              {e.etiqueta}
+              {e.numero > 0 && (
+                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-warning-500 px-1 text-[10px] leading-none font-bold text-ink-950">
+                  {e.numero}
+                </span>
+              )}
+            </Link>
+          ))}
+        </nav>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Boton de la esquina, solo con el nombre. Es para cerrar sesion y para tener
+ * a mano los datos de la cuenta, no para leerlos. Lo que el cliente consulta
+ * de verdad, sus reservas y sus pedidos, esta en los enlaces de al lado del
+ * buscador.
+ */
+function BotonSalir({ usuario }: { usuario: UsuarioMenu }) {
+  const { logout } = useAuth();
   const inicial = (usuario?.nombre ?? usuario?.email ?? 'U').charAt(0).toUpperCase();
 
   return (
-    <Link
-      to="/mi-cuenta"
-      className="relative flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-left transition-colors hover:bg-ink-50 sm:px-3"
-      aria-label="Mi cuenta"
-    >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-700">
-        {inicial}
-      </span>
-      <span className="hidden min-w-0 lg:block">
-        {/* El nombre arriba y "Mi cuenta" debajo. Al reves no se entiende que
-            el boton lleva a otra pagina. */}
-        <span className="block max-w-32 truncate text-sm font-semibold leading-tight text-ink-900">
-          {usuario?.nombre ?? usuario?.email ?? 'Mi cuenta'}
+    <div className="group relative flex items-center">
+      <Link
+        to="/mi-cuenta"
+        className="flex items-center gap-2 rounded-xl px-2.5 py-1.5 transition-colors hover:bg-ink-50"
+        aria-label="Mi cuenta"
+        title="Mi cuenta"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-700">
+          {inicial}
         </span>
-        <span className="block text-[11px] leading-tight text-ink-400">Mi cuenta</span>
-      </span>
-      {/* Distintivo discreto con las reservas sin resolver. */}
-      {pendientes > 0 && (
-        <span className="absolute top-0 right-0 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-warning-500 px-1 text-[11px] leading-none font-bold text-ink-950 sm:right-1">
-          {pendientes}
+        <span className="hidden text-left lg:block">
+          <span className="block max-w-28 truncate text-xs font-semibold leading-tight text-ink-800">
+            {usuario?.nombre ?? usuario?.email}
+          </span>
+          <span className="block text-[10px] leading-tight text-ink-400">Mi cuenta</span>
         </span>
-      )}
-    </Link>
+      </Link>
+
+      {/* Cerrar sesion aparece al pasar el raton, para no dejar un boton rojo
+          al lado del carrito. Es una accion que se hace una vez y se echa de
+          menos. */}
+      <button
+        type="button"
+        onClick={() => void logout()}
+        className="absolute -right-1 -bottom-1 hidden h-6 w-6 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-500 shadow-sm transition hover:border-danger-300 hover:bg-danger-50 hover:text-danger-600 group-hover:flex"
+        aria-label="Cerrar sesión"
+        title="Cerrar sesión"
+      >
+        <LogOut size={12} />
+      </button>
+    </div>
   );
 }
 
@@ -159,7 +254,7 @@ export function ClienteLayout() {
 }
 
 function ContenidoClienteLayout(): ReactNode {
-  const { token, usuario, logout } = useAuth();
+  const { token, usuario } = useAuth();
   const { totalCantidad, abrirPanel } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
@@ -205,7 +300,11 @@ function ContenidoClienteLayout(): ReactNode {
             </span>
           </Link>
 
-          <div className="relative hidden flex-1 max-w-2xl md:block">
+          {/* El buscador encoge para dejar sitio a los enlaces del cliente. En
+              pantallas grandes el buscador y los enlaces conviven; en
+              pequena solo sale el buscador y los enlaces pasan a una fila
+              aparte, porque apretarlos mas no los haria legibles. */}
+          <div className="relative hidden flex-1 max-w-xl md:block xl:max-w-lg">
             <form onSubmit={onSubmitBusqueda} role="search">
               <div className="relative">
                 <input
@@ -238,11 +337,15 @@ function ContenidoClienteLayout(): ReactNode {
             )}
           </div>
 
-          {/* Aqui esta toda la diferencia con la version anterior: con sesion
-              aparece el acceso a la cuenta, y sin sesion el de ingresar. Uno
-              u otro, nunca los dos. */}
-          <nav className="ml-auto flex items-center gap-1">
-            {usuario ? <AccesoCuenta usuario={usuario} /> : <BotonIngresar />}
+          {/* Los enlaces del cliente, a la derecha del buscador y a la
+              izquierda del carrito. Es lo que hace Amazon: sus pedidos y sus
+              listas estan siempre a la vista, sin menus y sin tener que
+              entrar en la cuenta. Van con icono y con un distintivo cuando hay
+              reservas sin resolver, para que se vea sin pulsar. */}
+          {usuario && <EnlacesCliente />}
+
+          <nav className="ml-auto flex items-center gap-1 md:ml-0">
+            {usuario ? <BotonSalir usuario={usuario} /> : <BotonIngresar />}
 
             <button
               type="button"
@@ -266,25 +369,6 @@ function ContenidoClienteLayout(): ReactNode {
           </nav>
         </div>
 
-        {/* Cerrar sesion baja a la barra, porque es una accion poco frecuente
-            y no debe competir con la compra. */}
-        {usuario && (
-          <div className="border-t border-ink-100 bg-ink-50/60">
-            <div className="mx-auto flex max-w-7xl items-center justify-end gap-2 px-4 py-1.5">
-              <span className="text-[11px] text-ink-400">
-                Sesión de {usuario.nombre ?? usuario.email}
-              </span>
-              <button
-                type="button"
-                onClick={() => void logout()}
-                className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold text-ink-500 transition hover:bg-ink-100 hover:text-danger-600"
-              >
-                <LogOut size={12} /> Cerrar sesión
-              </button>
-            </div>
-          </div>
-        )}
-
         {menuAbierto && (
           <div className="border-t border-ink-100 bg-white p-4 lg:hidden">
             <form onSubmit={onSubmitBusqueda} className="relative">
@@ -304,9 +388,16 @@ function ContenidoClienteLayout(): ReactNode {
           elemento del menu. Solo sale si hay alguna reserva sin resolver. */}
       <FranjaReservas />
 
-      <main className="px-4 py-6 lg:px-8">
+      <main className="flex-1 px-4 py-6 lg:px-8">
         <Outlet />
       </main>
+
+      {/* El pie y el panel del carrito se montan aqui y no en un layout aparte,
+          porque ClienteLayout es el unico layout que usa la tienda. Si se
+          quedaran fuera, al cambiar las rutas a este layout se habrian
+          quedado sin pie y sin carrito. */}
+      <Footer />
+      <CartPanel />
     </div>
   );
 }
