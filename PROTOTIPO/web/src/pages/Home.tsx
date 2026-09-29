@@ -9,7 +9,7 @@
 // hay en la tienda, con su foto de verdad y su precio de verdad.
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarClock, ChevronRight, Package, ScanLine, SlidersHorizontal } from 'lucide-react';
+import { ChevronRight, CreditCard, RotateCcw, ScanLine, ShieldCheck, SlidersHorizontal, Store } from 'lucide-react';
 import { api, type ItemCatalogoPublico } from '@/lib/api.js';
 import { usarSeo } from '@/lib/seo.js';
 import { resolverImagenProducto, hexDeColor } from '@/lib/productoMedia.js';
@@ -417,6 +417,64 @@ function BolsasDecorativas() {
   );
 }
 
+/**
+ * Franja de confianza, debajo de los botones del cinturon.
+ *
+ * Rellena el hueco que quedaba entre el texto y el borde de abajo, y lo hace
+ * con informacion que el cliente se pregunta antes de comprar: como se
+ * paga, como se recibe y si puede devolver. Todo lo que pone aqui sale del
+ * checkout de verdad, no es decoracion inventada: si la tienda no aceptara
+ * una forma de pago, el cinturon no la prometeria.
+ *
+ * Los cuatro iconos vienen de lucide, que ya usaba el resto de la pagina, y
+ * el separador es una linea vertical en vez de un borde de cada tarjeta,
+ * porque con el borde se ve una lista de cajas y con la linea se ve una
+ * sola fila continua.
+ */
+function FranjaConfianza() {
+  const datos = [
+    {
+      icono: Store,
+      titulo: 'Retiro o entrega',
+      texto: 'Recoge en la sucursal o te lo llevamos',
+    },
+    {
+      icono: CreditCard,
+      titulo: 'Tarjeta, QR o transferencia',
+      texto: 'Paga como te salga más cómodo',
+    },
+    {
+      icono: ShieldCheck,
+      titulo: 'Compra protegida',
+      texto: 'Te devolvemos el dinero si no llega',
+    },
+    {
+      icono: RotateCcw,
+      titulo: 'Cambios gratis',
+      texto: 'Si no te queda, la cambias',
+    },
+  ];
+
+  return (
+    <div className="mt-8 border-t border-white/10 pt-6">
+      <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-white/40">
+        Comprar aquí es fácil
+      </p>
+      <ul className="grid grid-cols-2 gap-x-4 gap-y-3 lg:grid-cols-4">
+        {datos.map((d) => (
+          <li key={d.titulo} className="flex items-start gap-2.5">
+            <d.icono size={16} className="mt-0.5 shrink-0 text-accent-400" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-white/90">{d.titulo}</p>
+              <p className="text-[11px] leading-tight text-white/45">{d.texto}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function Home() {
   const [items, setItems] = useState<ItemCatalogoPublico[]>([]);
   const [resto, setResto] = useState<ItemCatalogoPublico[]>([]);
@@ -502,68 +560,47 @@ export function Home() {
                 </Button>
               </Link>
             </div>
+
+            <FranjaConfianza />
           </div>
 
           <CarruselDestacados items={items} />
         </div>
       </section>
 
-      {/* Las tres cosas que la tienda ofrece y que no tiene una tienda
-          normal: probar sin pagar, ver donde hay stock y comprar en tienda. */}
-      <section className="grid gap-4 sm:grid-cols-3">
-        {[
-          {
-            icono: ScanLine,
-            titulo: 'Pruébate con realidad aumentada',
-            texto: 'Mírate la prenda con el vestidor virtual antes de decidir.',
-            to: '/catalogo',
-          },
-          {
-            icono: Package,
-            titulo: 'Stock real por sucursal',
-            texto: 'Ves cuántas hay de cada talla en cada tienda, sin adivinar.',
-            to: '/catalogo',
-          },
-          {
-            icono: CalendarClock,
-            titulo: 'Aparta sin pagar',
-            texto: 'Reserva en la tienda y ven a probártela cuando quieras.',
-            to: '/catalogo',
-          },
-        ].map((c) => (
+      {/* Antes aqui habia una franja con tres ventajas, pero decia casi lo
+          mismo que la que ahora va dentro del cinturon, y dos bloques que
+          hablan de lo mismo hacen que la pagina parezca mas corta de lo que
+          es. En su lugar van las categorias, que antes estaban debajo y que
+          son el segundo camino de entrada mas usado de una tienda de ropa. */}
+      <section>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-extrabold text-ink-900">Compra por categoría</h2>
           <Link
-            key={c.titulo}
-            to={c.to}
-            className="flex items-start gap-3 rounded-2xl border border-ink-200 bg-white p-4 transition hover:border-brand-300 hover:bg-brand-50/40"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-              <c.icono size={20} />
-            </span>
-            <div>
-              <p className="text-sm font-bold text-ink-900">{c.titulo}</p>
-              <p className="mt-0.5 text-xs text-ink-500">{c.texto}</p>
-            </div>
-          </Link>
-        ))}
-      </section>
-
-      <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {CATEGORIAS.map((cat) => (
-          <Link
-            key={cat.nombre}
             to="/catalogo"
-            className="flex items-center gap-3 rounded-2xl border border-ink-200 bg-gradient-to-br from-zinc-800 to-ink-950 p-4 text-white shadow-card transition-transform hover:-translate-y-0.5 hover:border-ink-400 hover:shadow-card-hover"
+            className="flex items-center gap-0.5 text-sm font-semibold text-brand-600 hover:text-brand-700"
           >
-            <span className="text-2xl" aria-hidden>
-              {cat.emoji}
-            </span>
-            <div>
-              <p className="text-sm font-bold">Ropa de</p>
-              <p className="text-sm">{cat.nombre}</p>
-            </div>
-            <ChevronRight className="ml-auto" size={18} />
+            Ver todas <ChevronRight size={16} />
           </Link>
-        ))}
+        </div>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {CATEGORIAS.map((cat) => (
+            <Link
+              key={cat.nombre}
+              to="/catalogo"
+              className="flex items-center gap-3 rounded-2xl border border-ink-200 bg-gradient-to-br from-zinc-800 to-ink-950 p-4 text-white shadow-card transition-transform hover:-translate-y-0.5 hover:border-ink-400 hover:shadow-card-hover"
+            >
+              <span className="text-2xl" aria-hidden>
+                {cat.emoji}
+              </span>
+              <div>
+                <p className="text-sm font-bold">Ropa de</p>
+                <p className="text-sm">{cat.nombre}</p>
+              </div>
+              <ChevronRight className="ml-auto" size={18} />
+            </Link>
+          ))}
+        </div>
       </section>
 
       <section>
