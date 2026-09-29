@@ -46,7 +46,9 @@ const FOTOS: FotoProducto[] = [
   { prenda: 'campera', color: 'negro', fichero: 'campera-negro.png' },
   { prenda: 'pantalon', color: 'azul', fichero: 'pantalon-azul.png' },
   { prenda: 'pijama', color: 'rosa', fichero: 'pijama-rosa.png' },
+
   { prenda: 'zapatilla', color: 'negro', fichero: 'zapatilla-negro.png' },
+  { prenda: 'zapatilla', color: 'blanco', fichero: 'zapatilla-blanca.png' },
 ];
 
 /**
