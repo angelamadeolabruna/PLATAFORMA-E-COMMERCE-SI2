@@ -36,6 +36,7 @@ import { MisPruebasRa } from '@/pages/cliente/MisPruebasRa.js';
 import { DetalleReserva } from '@/pages/cliente/DetalleReserva.js';
 import { MisCompras } from '@/pages/cliente/MisCompras.js';
 import { MiCuenta } from '@/pages/cliente/MiCuenta.js';
+import { ComprobarFotos } from '@/pages/ComprobarFotos.js';
 import { Recomendaciones } from '@/pages/cliente/Recomendaciones.js';
 import { Checkout } from '@/pages/Checkout.js';
 import { SandboxPago } from '@/pages/SandboxPago.js';
@@ -65,6 +66,10 @@ export function RouterApp() {
         <Route path="/recuperar-contraseña" element={<RecuperarContrasena />} />
         <Route path="/restablecer-contraseña" element={<RestablecerContrasena />} />
         <Route path="/establecer-contraseña" element={<EstablecerContrasena />} />
+        {/* Esta pagina comprueba que las fotos existan de verdad. No es parte
+            de la tienda: es la herramienta para cuando se cambian las fotos
+            y hay que saber si alguna se quedo sin cargar. */}
+        <Route path="comprobar-fotos" element={<ComprobarFotos />} />
         <Route path="*" element={<Placeholder titulo="Página no encontrada" />} />
       </Route>
 

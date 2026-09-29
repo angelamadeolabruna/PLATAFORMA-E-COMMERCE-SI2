@@ -1,7 +1,20 @@
 /**
  * Resolución de imágenes de producto por color.
- * Prioriza lo que viene de la API; si falta, usa assets locales de la prenda.
+ *
+ * El orden importa y es este:
+ *   1. La foto que trae la base de datos, si existe de verdad.
+ *   2. La foto local de la prenda, en el color que se esta viendo.
+ *   3. La foto local de la prenda, en su color principal.
+ *   4. Null, y quien llama dibuja el emoji.
+ *
+ * La foto local va la segunda y no la ultima a proposito. Los dibujos que
+ * se hicieron al principio siguen declarados en lib/fotos.ts, y asi el
+ * catalogo nunca se queda con un hueco mientras se buscan las fotos
+ * buenas. En cuanto haya una foto real de cada prenda, la real gana
+ * siempre, porque en lib/fotos.ts se busca antes que el dibujo.
  */
+
+import { rutaFoto } from '@/lib/fotos.js';
 
 export interface ImagenProducto {
   url: string;
@@ -30,71 +43,6 @@ const HEX_FALLBACK: Record<string, string> = {
   rosa: '#e91e8c',
 };
 
-// Un camino por cada tipo de prenda y color. Antes solo existia el de
-// polera, porque era el unico producto que tenia los ficheros. Ahora hay uno
-// por cada prenda del catalogo, y son los mismos ficheros que se.subieron
-// a public/productos, que es lo que la base de datos guarda en la columna
-// producto_imagenes.url.
-const PRENDA_POR_COLOR: Record<string, Record<string, string>> = {
-  remera: {
-    blanco: '/productos/remera/blanco.svg',
-    negra: '/productos/remera/negro.svg',
-    negro: '/productos/remera/negro.svg',
-    gris: '/productos/remera/gris.svg',
-  },
-  // La polera es el mismo dibujo que la remera. Se deja el nombre viejo
-  // porque hay codigos y consultas que lo siguen usando.
-  polera: {
-    blanco: '/productos/remera/blanco.svg',
-    blanca: '/productos/remera/blanco.svg',
-    negro: '/productos/remera/negro.svg',
-    negra: '/productos/remera/negro.svg',
-    gris: '/productos/remera/gris.svg',
-  },
-  polo: {
-    rojo: '/productos/polo/rojo.svg',
-    roja: '/productos/polo/rojo.svg',
-    azul: '/productos/polo/azul.svg',
-  },
-  pantalon: {
-    azul: '/productos/pantalon/azul.svg',
-    beige: '/productos/pantalon/beige.svg',
-  },
-  campera: {
-    negro: '/productos/campera/negro.svg',
-    negra: '/productos/campera/negro.svg',
-    gris: '/productos/campera/gris.svg',
-  },
-  pijama: {
-    rosa: '/productos/pijama/rosa.svg',
-    verde: '/productos/pijama/verde.svg',
-  },
-  vestido: {
-    blanco: '/productos/vestido/blanco.svg',
-    blanca: '/productos/vestido/blanco.svg',
-    rosa: '/productos/vestido/rosa.svg',
-  },
-  zapatilla: {
-    blanco: '/productos/zapatilla/blanco.svg',
-    negra: '/productos/zapatilla/negro.svg',
-    negro: '/productos/zapatilla/negro.svg',
-  },
-};
-
-// Cuando solo hay un color, ese color es el que se dibuja. Sirve para que
-// un Producto cuya imagen principal no viene de la base de datos, como los
-// del pack de demostracion, no se quede sin foto.
-const COLOR_UNICO: Record<string, string> = {
-  remera: 'negro',
-  polera: 'negro',
-  polo: 'azul',
-  pantalon: 'azul',
-  campera: 'negro',
-  pijama: 'rosa',
-  vestido: 'rosa',
-  zapatilla: 'negro',
-};
-
 function normalizarColor(nombre: string): string {
   return nombre
     .trim()
@@ -103,17 +51,17 @@ function normalizarColor(nombre: string): string {
     .replace(/\p{M}/gu, '');
 }
 
-// Deuelve el nombre de la prenda que le toca a un producto, o null si no
-// hay ninguna ilustracion local para el. Se decide por el codigo y el
-// nombre, que es lo unico que hay antes de pedir imagenes a la base.
-function tipoDePrenda(codigo: string, nombre: string): string | null {
+// De que prenda se trata, deducido del codigo y del nombre. Es lo unico que
+// hay antes de mirar en la base de datos, y es lo que se usa para buscar la
+// foto local.
+export function tipoDePrenda(codigo: string, nombre: string): string | null {
   const t = `${codigo} ${nombre}`.toLowerCase();
   if (/zapat|calzado|sandal|tenis/.test(t)) return 'zapatilla';
   if (/pijama|batik/.test(t)) return 'pijama';
   if (/pantalon|chino|jean|pantal/.test(t)) return 'pantalon';
   if (/vestido|falda/.test(t)) return 'vestido';
   if (/campera|abrigo|chaqueta|coat/.test(t)) return 'campera';
-  if (/polo\b|polera|remera|camiseta|camisa|blusa|t-shirt/.test(t)) return 'remera';
+  if (/polo|polera|remera|camiseta|camisa|blusa|t-shirt/.test(t)) return 'remera';
   return null;
 }
 
@@ -143,30 +91,32 @@ export function resolverImagenProducto(opts: {
 }): string | null {
   const { codigo, nombre, colorSeleccionado, imagenPrincipal, imagenes = [] } = opts;
   const tipo = tipoDePrenda(codigo, nombre);
-  const porTipo = tipo ? PRENDA_POR_COLOR[tipo] : undefined;
 
+  // 1. La foto local de ese color, si la hay. Va la primera a proposito: la
+  //    base de datos todavia guarda rutas a los dibujitos SVG, y si se
+  //    respetara ese orden, la foto real que se descargue nunca se veria.
+  if (tipo && colorSeleccionado) {
+    const local = rutaFoto(tipo, colorSeleccionado);
+    if (local) return local;
+  }
+
+  // 2. La de la base de datos, si el cliente pide ese color.
   if (colorSeleccionado) {
     const key = normalizarColor(colorSeleccionado);
-    const porColor = imagenes.find(
-      (img) => img.color && normalizarColor(img.color) === key,
-    );
+    const porColor = imagenes.find((img) => img.color && normalizarColor(img.color) === key);
     if (porColor?.url) return porColor.url;
-
-    if (porTipo?.[key]) {
-      return porTipo[key];
-    }
   }
 
+  // 3. La foto local de la prenda, la que tenga, antes que la principal de
+  //    la base de datos, por el mismo motivo que en el punto 1.
+  if (tipo) {
+    const local = rutaFoto(tipo);
+    if (local) return local;
+  }
+
+  // 4. La principal de la base de datos.
   const principal = imagenes.find((i) => i.es_principal)?.url ?? imagenPrincipal;
   if (principal) return principal;
-
-  // Sin imagen principal de la base de datos, se usa la del color que se le
-  // pone por defecto a esa prenda.
-  if (tipo) {
-    const unico = COLOR_UNICO[tipo];
-    const dibujada = unico ? PRENDA_POR_COLOR[tipo]?.[unico] : undefined;
-    if (dibujada) return dibujada;
-  }
 
   return null;
 }
@@ -178,7 +128,6 @@ export function enriquecerColoresCatalogo(
   colores: Array<string | ColorCatalogo>,
 ): ColorCatalogo[] {
   const tipo = tipoDePrenda(codigo, nombre);
-  const porTipo = tipo ? PRENDA_POR_COLOR[tipo] : undefined;
 
   return colores.map((c) => {
     if (typeof c === 'string') {
@@ -186,14 +135,14 @@ export function enriquecerColoresCatalogo(
       return {
         nombre: c,
         codigo_hex: HEX_FALLBACK[key] ?? null,
-        imagen_url: porTipo?.[key] ?? null,
+        imagen_url: (tipo && rutaFoto(tipo, c)) ?? null,
       };
     }
     const key = normalizarColor(c.nombre);
     return {
       nombre: c.nombre,
       codigo_hex: c.codigo_hex ?? HEX_FALLBACK[key] ?? null,
-      imagen_url: c.imagen_url ?? porTipo?.[key] ?? null,
+      imagen_url: c.imagen_url ?? ((tipo && rutaFoto(tipo, c.nombre)) ?? null),
     };
   });
 }
