@@ -244,12 +244,12 @@ function CarruselDestacados({ items }: { items: ItemCatalogoPublico[] }) {
   useEffect(() => {
     if (sinMovimiento) return;
     if (parado || total < 2) return;
-    // Tres segundos. A cinco se hacia aburrido: el cliente ya lo habia
-    // mirado y solo esperaba a que cambiara. A tres alcanza para ver las
-    // cuatro prendas en doce segundos sin que parezca una loteria.
+    // Dos segundos. A tres iba bien, pero el cliente que llega a la portada
+    // y pasa cinco segundos mirando ve una sola prenda; a dos ve el ritmo
+    // completo de las cuatro mientras lee el texto de al lado.
     const id = setInterval(() => {
       setIndice((i) => (i + 1) % total);
-    }, 3000);
+    }, 2000);
     return () => clearInterval(id);
   }, [parado, sinMovimiento, total]);
 
@@ -367,6 +367,56 @@ function CarruselDestacados({ items }: { items: ItemCatalogoPublico[] }) {
   );
 }
 
+/**
+ * Adorno de las bolsas de compra del cinturon.
+ *
+ * Antes habia un emoji de bolsa gigante y translucido. Se veia como un
+ * pegote gris y hacia ruido de fondo. Aqui son tres bolsas dibujadas en SVG,
+ * en silueta, con el mismo trazo que usaria un logotipo: se leen como
+ * decoracion y no compiten con la foto de la prenda.
+ *
+ * Se dibujan en vez de escribirse como emoji por dos motivos: el emoji se ve
+ * igual en todos los sistemas pero cada uno lo pinta de su forma, con lo que
+ * la decoracion cambia segun el ordenador del cliente; y no se puede
+ * cambiar ni el color ni el grosor.
+ *
+ * No llevan texto ni migas, porque es decoracion y no informacion.
+ */
+function BolsasDecorativas() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      {/* Las tres bolsas van en la esquina de la derecha, detras del
+          carrusel, escalonadas para que se lean como un grupo y no como
+          tres imagenes sueltas. */}
+      <svg
+        viewBox="0 0 200 200"
+        className="absolute top-1/2 right-2 h-56 w-56 -translate-y-1/2 text-white/[0.07] sm:right-6 lg:h-72 lg:w-72"
+      >
+        {/* Bolsa grande, la de atras */}
+        <g stroke="currentColor" strokeWidth="4" fill="none" strokeLinejoin="round">
+          <path d="M108 78 L158 78 L150 168 L116 168 Z" />
+          <path d="M120 78 C120 58 146 58 146 78" />
+        </g>
+        {/* Bolsa mediana, en medio */}
+        <g stroke="currentColor" strokeWidth="4" fill="none" strokeLinejoin="round">
+          <path d="M60 66 L116 66 L110 164 L66 164 Z" />
+          <path d="M74 66 C74 44 102 44 102 66" />
+        </g>
+        {/* Bolsa pequena, la de delante y la mas nitida */}
+        <g stroke="currentColor" strokeWidth="4.5" fill="none" strokeLinejoin="round">
+          <path d="M22 92 L62 92 L58 152 L26 152 Z" />
+          <path d="M32 92 C32 76 52 76 52 92" />
+        </g>
+      </svg>
+
+      {/* Dos circulos suaves, para que el negro del cinturon no quede plano.
+          Son tan tenues que no se notan, pero dan profundidad. */}
+      <div className="absolute -top-20 -left-16 h-64 w-64 rounded-full bg-brand-500/10 blur-3xl" />
+      <div className="absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-accent-500/10 blur-3xl" />
+    </div>
+  );
+}
+
 export function Home() {
   const [items, setItems] = useState<ItemCatalogoPublico[]>([]);
   const [resto, setResto] = useState<ItemCatalogoPublico[]>([]);
@@ -423,6 +473,8 @@ export function Home() {
           dos columnas: el texto a la izquierda y las prendas de verdad a la
           derecha, en un carrusel. */}
       <section className="relative -mx-4 overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-800 via-ink-950 to-black px-6 py-10 sm:mx-0 sm:px-10 sm:py-14">
+        <BolsasDecorativas />
+
         <div className="relative z-10 flex flex-col items-center gap-10 lg:flex-row lg:justify-between">
           <div className="max-w-xl text-center lg:text-left">
             <Badge variant="accent" className="mb-4 border-accent-300/40 bg-accent-400/15 text-accent-200">
