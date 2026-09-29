@@ -244,9 +244,12 @@ function CarruselDestacados({ items }: { items: ItemCatalogoPublico[] }) {
   useEffect(() => {
     if (sinMovimiento) return;
     if (parado || total < 2) return;
+    // Tres segundos. A cinco se hacia aburrido: el cliente ya lo habia
+    // mirado y solo esperaba a que cambiara. A tres alcanza para ver las
+    // cuatro prendas en doce segundos sin que parezca una loteria.
     const id = setInterval(() => {
       setIndice((i) => (i + 1) % total);
-    }, 5000);
+    }, 3000);
     return () => clearInterval(id);
   }, [parado, sinMovimiento, total]);
 
@@ -282,7 +285,7 @@ function CarruselDestacados({ items }: { items: ItemCatalogoPublico[] }) {
 
   return (
     <div
-      className="relative w-full max-w-xs sm:max-w-sm"
+      className="relative w-full max-w-sm sm:max-w-md lg:max-w-lg xl:max-w-xl"
       onMouseEnter={() => setParado(true)}
       onMouseLeave={() => setParado(false)}
       onFocus={() => setParado(true)}
@@ -293,7 +296,9 @@ function CarruselDestacados({ items }: { items: ItemCatalogoPublico[] }) {
       aria-label="Prendas destacadas"
       tabIndex={0}
     >
-      <div className="relative aspect-4/5 overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-white/20">
+      {/* Cuadrado y no vertical. Las fotos de producto son casi cuadradas, y
+          en un alto se quedaban con bandas blancas arriba y abajo. */}
+      <div className="relative aspect-square overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-white/20">
         {/* Sin mix-blend-multiply aqui. Ese filtro multiplica los pixeles de
             la foto por los del fondo, y como el fondo de la pagina es negro,
             la prenda salia casi negra. En la tarjeta del catalogo si funciona,
@@ -303,7 +308,10 @@ function CarruselDestacados({ items }: { items: ItemCatalogoPublico[] }) {
             key={`${actual.codigo}-${indice}`}
             src={foto}
             alt={actual.nombre}
-            className="h-full w-full object-contain p-6"
+            /* p-2 en vez de p-6: las fotos de producto ya traen su propio
+               fondo blanco, y con mucho relleno quedaba una prenda pequena
+               flotando en un cuadrado grande. */
+            className="h-full w-full object-contain p-2"
             onError={() => setImagenRota(true)}
           />
         ) : (
