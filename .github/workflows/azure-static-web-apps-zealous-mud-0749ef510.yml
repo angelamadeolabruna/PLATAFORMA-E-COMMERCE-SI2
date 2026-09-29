@@ -41,7 +41,11 @@ jobs:
           ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
           # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
           app_location: "./PROTOTIPO/web" # App source code path
-          api_location: "PROTOTIVO/api" # Api source code path - optional
+          # La carpeta se llama PROTOTIPO, con I. Estaba escrito PROTOTIVO, con
+          # O, y por eso Azure no encontraba la API. Ahora mismo no afectaba a
+          # nada, porque el backend no se compila desde este flujo sino desde
+          # main_tiendasm.yml, pero si algun dia se usa aqui, fallaria.
+          api_location: "PROTOTIPO/api" # Api source code path - optional
           output_location: "dist" # Built app content directory - optional
           github_id_token: ${{ steps.idtoken.outputs.result }}
           ###### End of Repository/Build Configurations ######
