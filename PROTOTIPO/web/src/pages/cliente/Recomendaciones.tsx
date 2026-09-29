@@ -126,6 +126,8 @@ export function Recomendaciones() {
                     <img
                       src={imagen}
                       alt={item.producto.nombre}
+                      loading="lazy"
+                      decoding="async"
                       className="h-52 w-full rounded-t-2xl border-b border-ink-100 object-cover transition group-hover:opacity-90"
                     />
                   ) : (

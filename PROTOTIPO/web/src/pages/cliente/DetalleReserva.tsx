@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { api, ApiError, type ReservaDetalle } from '@/lib/api.js';
 import { formatearFechaHora, varianteEstadoReserva } from '@/lib/reservas.js';
+import { monto } from '@/lib/formato.js';
 import { Badge } from '@/components/ui/Badge.js';
 import { Button } from '@/components/ui/Button.js';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card.js';
@@ -175,7 +176,7 @@ export function DetalleReserva() {
                       <div className="flex items-center gap-4 text-sm">
                         <span className="text-ink-500">x{item.cantidad}</span>
                         <span className="font-semibold text-ink-900">
-                          Bs. {(item.precio_base * item.cantidad).toFixed(2)}
+                          Bs. {monto(item.precio_base * item.cantidad)}
                         </span>
                       </div>
                     </div>
@@ -186,7 +187,7 @@ export function DetalleReserva() {
                 <div className="mt-2 flex items-center justify-between border-t border-ink-200 pt-3">
                   <span className="text-sm font-semibold text-ink-600">Total estimado</span>
                   <span className="text-base font-extrabold text-brand-700">
-                    Bs. {totalEstimado.toFixed(2)}
+                    Bs. {monto(totalEstimado)}
                   </span>
                 </div>
               )}

@@ -209,12 +209,21 @@ export function Checkout() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      <Link
-        to="/carrito"
+      {/* El carrito real es el panel lateral, no una pagina, asi que no hay
+          una ruta a la que volver. Se vuelve atras en el historial, que es
+          de donde necesariamente viene el cliente, y si el historial esta
+          vacio se cae al catalogo. Antes este enlace llevaba a /carrito,
+          que era un marcador de posicion sin contenido. */}
+      <button
+        type="button"
+        onClick={() => {
+          if (window.history.length > 1) navigate(-1);
+          else navigate('/productos');
+        }}
         className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-ink-500 hover:text-ink-800"
       >
         <ChevronLeft size={16} /> Volver al carrito
-      </Link>
+      </button>
 
       <div className="mb-6 flex items-center gap-2">
         {pasos.map((p, idx) => (
@@ -255,6 +264,8 @@ export function Checkout() {
                         <img
                           src={item.prenda.imagen_principal}
                           alt={item.prenda.nombre}
+                          loading="lazy"
+                          decoding="async"
                           className="h-14 w-14 rounded-lg border border-ink-100 object-cover"
                         />
                       ) : (

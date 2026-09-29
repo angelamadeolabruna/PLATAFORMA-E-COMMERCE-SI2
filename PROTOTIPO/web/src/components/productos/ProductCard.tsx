@@ -23,6 +23,8 @@ export function ProductCard({ producto }: Props) {
           <img
             src={producto.imagen}
             alt={producto.nombre}
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105 select-none"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = 'none';

@@ -103,12 +103,16 @@ export function MisPruebasRa() {
                     <img
                       src={s.foto_resultado}
                       alt={`Prueba de ${s.prenda.nombre}`}
+                      loading="lazy"
+                      decoding="async"
                       className="h-28 w-28 rounded-xl border border-ink-100 object-cover"
                     />
                   ) : s.prenda.imagen_principal ? (
                     <img
                       src={s.prenda.imagen_principal}
                       alt={s.prenda.nombre}
+                      loading="lazy"
+                      decoding="async"
                       className="h-14 w-14 rounded-xl border border-ink-100 object-cover"
                     />
                   ) : (

@@ -76,7 +76,38 @@ function SidebarBody({ alNavegar }: { alNavegar: () => void }) {
     return Boolean(usuario) && (p.includes('*') || p.includes('gestionar_reservas'));
   }
 
+  // CU46: el numero de alertas criticas se sondea cada 60 segundos, el mismo
+  // ritmo con el que el servidor recalcula. Es solo el total, para no traer
+  // las dos tablas enteras al menu.
+  const [nCriticas, setNCriticas] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!tokenPuedeAlertas()) return;
+    let activo = true;
+    const refrescar = () => {
+      api
+        .contarAlertasCriticas()
+        .then((n) => {
+          if (activo) setNCriticas(n);
+        })
+        .catch(() => {
+          if (activo) setNCriticas(null);
+        });
+    };
+    refrescar();
+    const intervalo = setInterval(refrescar, 60_000);
+    return () => {
+      activo = false;
+      clearInterval(intervalo);
+    };
+  }, [usuario?.permisos]);
+
   const paquetesVisibles = PAQUETES_ADMIN.filter((paquete) => paquete.items.some(permitido));
+
+  // El acceso rapido no repite datos: localiza el item dentro de
+  // adminMenu.ts con find, para que el CU y el icono sigan siendo los mismos
+  // que los del menu lateral y no se desincronicen.
+  const itemDashboard = PAQUETES_ADMIN.flatMap((p) => p.items).find((i) => i.ruta === '/admin');
 
   return (
     <div className="flex h-full flex-col bg-white">
@@ -91,6 +122,44 @@ function SidebarBody({ alNavegar }: { alNavegar: () => void }) {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
+        {/* Acceso rapido. Va arriba y destacado porque es la pantalla por la
+            que entra el administrador y la que resume todo el negocio. El
+            dashboard no se quita del menu lateral: aqui solo se repite como
+            atajo, tomando los mismos datos de adminMenu.ts. */}
+        {itemDashboard && permitido(itemDashboard) && (
+          <div className="mb-5 rounded-xl border border-ink-800 bg-ink-950 p-1">
+            <NavLink
+              to={itemDashboard.ruta}
+              end
+              onClick={alNavegar}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition',
+                  isActive ? 'bg-white text-ink-950' : 'text-white hover:bg-white/10',
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <itemDashboard.icono
+                    size={18}
+                    className={isActive ? 'text-ink-950' : 'text-white/80'}
+                  />
+                  <span className="flex-1">{itemDashboard.etiqueta}</span>
+                  <span
+                    className={cn(
+                      'rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold',
+                      isActive ? 'bg-ink-100 text-ink-700' : 'bg-white/15 text-white/90',
+                    )}
+                  >
+                    {itemDashboard.cu}
+                  </span>
+                </>
+              )}
+            </NavLink>
+          </div>
+        )}
+
         {paquetesVisibles.map((paquete) => (
           <div key={paquete.id} className="mb-5">
             <p className="mb-1.5 px-3 text-[11px] font-bold uppercase tracking-wider text-ink-400">
@@ -122,6 +191,11 @@ function SidebarBody({ alNavegar }: { alNavegar: () => void }) {
                           {item.ruta === '/admin/inventario/alertas' && nAlertas != null && nAlertas > 0 && (
                             <span className="rounded-full bg-danger-600 px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none text-white">
                               {nAlertas}
+                            </span>
+                          )}
+                          {item.ruta === '/admin/alertas/criticas' && nCriticas != null && nCriticas > 0 && (
+                            <span className="rounded-full bg-danger-600 px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none text-white">
+                              {nCriticas}
                             </span>
                           )}
                           {item.ruta === '/admin/reservas' && nReservasPend != null && nReservasPend > 0 && (

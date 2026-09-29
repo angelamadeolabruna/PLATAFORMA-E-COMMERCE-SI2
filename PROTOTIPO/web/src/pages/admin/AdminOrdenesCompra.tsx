@@ -9,6 +9,7 @@ import {
   type OpcionProductoOrden,
   type OrdenCompraItem,
 } from '@/lib/api.js';
+import { monto } from '@/lib/formato.js';
 import { useAuth } from '@/contexts/AuthContext.js';
 import { Button } from '@/components/ui/Button.js';
 import { Input } from '@/components/ui/Input.js';
@@ -302,7 +303,7 @@ function ModalNuevaOrden({ abierto, opciones, editando, enviando, error, alCerra
                   </div>
                   <div className="w-28 text-right">
                     <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-400">Subtotal</span>
-                    <p className="mt-2.5 text-sm font-bold text-ink-900">Bs {((Number(l.cantidad) || 0) * (Number(l.precio) || 0)).toFixed(2)}</p>
+                    <p className="mt-2.5 text-sm font-bold text-ink-900">Bs {monto((Number(l.cantidad) || 0) * (Number(l.precio) || 0))}</p>
                   </div>
                   <button
                     type="button"
@@ -321,7 +322,7 @@ function ModalNuevaOrden({ abierto, opciones, editando, enviando, error, alCerra
                 {lineas.length} línea{lineas.length === 1 ? '' : 's'}
               </p>
               <p className="text-sm font-bold text-ink-900">
-                Total: <span className="text-brand-600">Bs {total.toFixed(2)}</span>
+                Total: <span className="text-brand-600">Bs {monto(total)}</span>
               </p>
             </div>
           </div>
@@ -416,8 +417,8 @@ function ModalVerOrden({ orden, alCerrar }: { orden: DetalleOrdenCompra | null; 
                       {l.talla} · {l.color}
                     </td>
                     <td className="px-4 py-2.5 text-right text-ink-700">{l.cantidad}</td>
-                    <td className="px-4 py-2.5 text-right text-ink-700">Bs {Number(l.precio_unitario).toFixed(2)}</td>
-                    <td className="px-4 py-2.5 text-right font-semibold text-ink-800">Bs {Number(l.subtotal).toFixed(2)}</td>
+                    <td className="px-4 py-2.5 text-right text-ink-700">Bs {monto(Number(l.precio_unitario))}</td>
+                    <td className="px-4 py-2.5 text-right font-semibold text-ink-800">Bs {monto(Number(l.subtotal))}</td>
                   </tr>
                 ))}
               </tbody>
@@ -425,7 +426,7 @@ function ModalVerOrden({ orden, alCerrar }: { orden: DetalleOrdenCompra | null; 
             <div className="flex items-center justify-between bg-ink-50/60 px-4 py-3">
               <p className="text-sm text-ink-500">Total líneas: {orden.detalle.length}</p>
               <p className="text-sm font-bold text-ink-900">
-                Total: <span className="text-brand-600">Bs {Number(orden.total).toFixed(2)}</span>
+                Total: <span className="text-brand-600">Bs {monto(Number(orden.total))}</span>
               </p>
             </div>
           </div>
@@ -713,7 +714,7 @@ export function AdminOrdenesCompra() {
                       <td className="px-4 py-3">
                         <Badge variant={badge.variante}>{badge.etiqueta}</Badge>
                       </td>
-                      <td className="px-4 py-3 text-right font-semibold text-ink-800">Bs {Number(o.total).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right font-semibold text-ink-800">Bs {monto(Number(o.total))}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
                           <button

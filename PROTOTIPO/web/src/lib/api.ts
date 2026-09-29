@@ -2044,6 +2044,34 @@ export const api = {
     return handleResponse<RespuestaRecomendaciones>(res);
   },
 
+  // CU44 - Dashboard Inteligente y KPIs. Sin filtros responde con los
+  // ultimos 30 dias y todas las sucursales.
+  async obtenerKpisDashboard(filtros?: {
+    desde?: string;
+    hasta?: string;
+    id_sucursal?: number;
+  }): Promise<RespuestaDashboard> {
+    const params = new URLSearchParams();
+    if (filtros?.desde) params.set('desde', filtros.desde);
+    if (filtros?.hasta) params.set('hasta', filtros.hasta);
+    if (filtros?.id_sucursal != null) params.set('id_sucursal', String(filtros.id_sucursal));
+    const qs = params.toString();
+    const res = await solicitar(`${this.baseUrl}/dashboard/kpis${qs ? `?${qs}` : ''}`);
+    return handleResponse<RespuestaDashboard>(res);
+  },
+
+  // CU46 - Alertas Críticas. El detalle completo, para la página.
+  async listarAlertasCriticas(): Promise<RespuestaAlertasCriticas> {
+    const res = await solicitar(`${this.baseUrl}/admin/alertas/criticas`);
+    return handleResponse<RespuestaAlertasCriticas>(res);
+  },
+
+  // Solo el total, que es lo que sondea el badge del menú cada 60 s.
+  async contarAlertasCriticas(): Promise<number> {
+    const res = await solicitar(`${this.baseUrl}/admin/alertas/criticas/total`);
+    return handleResponse<{ total: number }>(res).then((r) => r.total);
+  },
+
   // CU43 - Generar Reporte por Comando de Voz (IA)
   async generarReporteVoz(audio?: Blob, texto?: string): Promise<RespuestaReporteVoz> {
     const formData = new FormData();
@@ -2103,3 +2131,76 @@ export interface RespuestaReporteVoz {
   url_archivo: string;
   resumen: string;
 }
+
+// CU44 - Dashboard Inteligente y KPIs
+export type PuntoSerieDashboard = {
+  etiqueta: string;
+  valor: number;
+};
+
+export type ProductoTopDashboard = {
+  nombre: string;
+  categoria: string;
+  cantidad: number;
+  total: number;
+};
+
+export type KpisDashboard = {
+  ventas_totales: number;
+  numero_ventas: number;
+  ticket_promedio: number;
+  existencias_disponibles: number;
+  existencias_reservadas: number;
+  existencias_vendidas: number;
+  existencias_agotadas: number;
+  existencias_proximas_a_ingresar: number;
+  reservas_pendientes: number;
+  reservas_totales: number;
+  alertas_stock_bajo: number;
+};
+
+export type RespuestaDashboard = {
+  periodo: { desde: string; hasta: string };
+  sucursal: { id: number | null; nombre: string };
+  kpis: KpisDashboard;
+  series: {
+    ventas_por_sucursal: PuntoSerieDashboard[];
+    ventas_por_mes: PuntoSerieDashboard[];
+    reservas_por_estado: PuntoSerieDashboard[];
+    existencias: PuntoSerieDashboard[];
+  };
+  topProductos: ProductoTopDashboard[];
+  sin_datos: boolean;
+};
+
+// CU46 - Alertas Críticas (quiebres de stock y reservas sin atender)
+export type ItemQuiebreAlerta = {
+  id_ptc: number;
+  producto: string;
+  talla: string;
+  color: string;
+  categoria: string;
+  id_sucursal: number;
+  sucursal: string;
+  cantidad_disponible: number;
+  stock_minimo: number;
+  clasificacion: string;
+};
+
+export type ItemReservaSinAtender = {
+  id_reserva: number;
+  cliente: string;
+  id_sucursal: number;
+  sucursal: string;
+  estado: string;
+  fecha_reserva: string | null;
+  hora_reserva: string | null;
+  minutos_espera: number;
+};
+
+export type RespuestaAlertasCriticas = {
+  quiebres: { total: number; items: ItemQuiebreAlerta[] };
+  reservas_sin_atender: { total: number; items: ItemReservaSinAtender[] };
+  generado_en: string;
+  siguiente_ciclo_segundos: number;
+};

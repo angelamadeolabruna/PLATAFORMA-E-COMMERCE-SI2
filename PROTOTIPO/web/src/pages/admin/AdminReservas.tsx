@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AlertCircle, CalendarClock, CheckCircle2, Clock, MapPin, PackageCheck, RefreshCw, Store, User, UserCheck, X } from 'lucide-react';
 import { api, ApiError, type DetalleReservaSucursal, type ReservaSucursalItem } from '@/lib/api.js';
+import { monto } from '@/lib/formato.js';
 import { useAuth } from '@/contexts/AuthContext.js';
 import { Button } from '@/components/ui/Button.js';
 import { Card } from '@/components/ui/Card.js';
@@ -164,7 +165,7 @@ function ModalDetalleReserva({
                         <div className="flex items-center gap-4 text-sm">
                           <span className="text-ink-500">x{item.cantidad}</span>
                           <span className="font-semibold text-ink-900">
-                            Bs. {(item.precio_base * item.cantidad).toFixed(2)}
+                            Bs. {monto(item.precio_base * item.cantidad)}
                           </span>
                         </div>
                       </div>
@@ -174,7 +175,7 @@ function ModalDetalleReserva({
 {datos.items.length > 0 && (
                   <div className="mt-3 flex items-center justify-between border-t border-ink-200 pt-3">
                     <span className="text-sm font-semibold text-ink-600">Total estimado</span>
-                    <span className="text-base font-extrabold text-brand-700">Bs. {totalEstimado.toFixed(2)}</span>
+                    <span className="text-base font-extrabold text-brand-700">Bs. {monto(totalEstimado)}</span>
                   </div>
                 )}
 

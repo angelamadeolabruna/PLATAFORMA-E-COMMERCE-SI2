@@ -17,6 +17,8 @@ import { PagosModule } from './modulos/pagos/PagosModule.js';
 import { ComprobantesModule } from './modulos/comprobantes/ComprobantesModule.js';
 import { RecomendacionesModule } from './modulos/recomendaciones/RecomendacionesModule.js';
 import { ReportesVozModule } from './modulos/reportes-voz/ReportesVozModule.js';
+import { DashboardModule } from './modulos/dashboard/DashboardModule.js';
+import { AlertasCriticasModule } from './modulos/alertas/AlertasCriticasModule.js';
 
 @Module({
   imports: [
@@ -49,6 +51,8 @@ import { ReportesVozModule } from './modulos/reportes-voz/ReportesVozModule.js';
     ComprobantesModule,
     RecomendacionesModule,
     ReportesVozModule,
+      DashboardModule,
+      AlertasCriticasModule,
   ],
   controllers: [HealthController],
 })

@@ -24,6 +24,8 @@ import { AdminOrdenesCompra } from '@/pages/admin/AdminOrdenesCompra.js';
 import { AdminKardex } from '@/pages/admin/AdminKardex.js';
 import { AdminAjustes } from '@/pages/admin/AdminAjustes.js';
 import { AdminAlertas } from '@/pages/admin/AdminAlertas.js';
+import { AdminAlertasCriticas } from '@/pages/admin/AdminAlertasCriticas.js';
+import { AdminDashboard } from '@/pages/admin/AdminDashboard.js';
 import { AdminExistencias } from '@/pages/admin/AdminExistencias.js';
 import { AdminRespaldos } from '@/pages/admin/AdminRespaldos.js';
 import { AdminReservas } from '@/pages/admin/AdminReservas.js';
@@ -33,6 +35,7 @@ import { MisReservas } from '@/pages/cliente/MisReservas.js';
 import { MisPruebasRa } from '@/pages/cliente/MisPruebasRa.js';
 import { DetalleReserva } from '@/pages/cliente/DetalleReserva.js';
 import { MisCompras } from '@/pages/cliente/MisCompras.js';
+import { MiCuenta } from '@/pages/cliente/MiCuenta.js';
 import { Recomendaciones } from '@/pages/cliente/Recomendaciones.js';
 import { Checkout } from '@/pages/Checkout.js';
 import { SandboxPago } from '@/pages/SandboxPago.js';
@@ -50,7 +53,10 @@ export function RouterApp() {
         <Route path="/catalogo" element={<Catalogo />} />
         <Route path="/productos" element={<Navigate to="/catalogo" replace />} />
         <Route path="/productos/:codigo" element={<Producto />} />
-        <Route path="/carrito" element={<Placeholder titulo="Carrito de compras" />} />
+        {/* El carrito es un panel lateral, no una pagina. Si alguien escribe
+            /carrito en la barra, tiene que llegar a la tienda, no a un
+            marcador de posicion vacio. */}
+        <Route path="/carrito" element={<Navigate to="/productos" replace />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/sandbox-pago" element={<SandboxPago />} />
         <Route path="/reservas/nueva" element={<Navigate to="/catalogo" replace />} />
@@ -63,7 +69,9 @@ export function RouterApp() {
       </Route>
 
       <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<Navigate to="/admin/usuarios" replace />} />
+        {/* El indice es el dashboard, no la lista de usuarios: es la pantalla
+            que el administrador ve al entrar y la que resume el negocio. */}
+        <Route index element={<AdminDashboard />} />
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="roles" element={<Roles />} />
         <Route path="sucursales" element={<Sucursales />} />
@@ -77,11 +85,16 @@ export function RouterApp() {
         <Route path="inventario/alertas" element={<AdminAlertas />} />
         <Route path="inventario/existencias" element={<AdminExistencias />} />
         <Route path="inventario/backup" element={<AdminRespaldos />} />
+        <Route path="alertas/criticas" element={<AdminAlertasCriticas />} />
         <Route path="reservas" element={<AdminReservas />} />
         <Route path="caja" element={<AdminCaja />} />
         <Route path="auditoria" element={<Auditoria />} />
         <Route path="reportes/voz" element={<ReportesVoz />} />
         <Route path="*" element={<AdminPlaceholder />} />
+      </Route>
+
+      <Route path="/mi-cuenta" element={<ClienteLayout />}>
+        <Route index element={<MiCuenta />} />
       </Route>
 
       <Route path="/reservas" element={<ClienteLayout />}>

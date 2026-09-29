@@ -104,6 +104,8 @@ export function CartPanel() {
                     <img
                       src={item.prenda.imagen_principal}
                       alt={item.prenda.nombre}
+                      loading="lazy"
+                      decoding="async"
                       className="h-16 w-16 rounded-xl border border-ink-100 object-cover"
                     />
                   ) : (

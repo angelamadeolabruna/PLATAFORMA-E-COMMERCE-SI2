@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ScanLine, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { productosDemo, categoriasDemo } from '@/data/productos.js';
+import { usarSeo } from '@/lib/seo.js';
 import { ProductCard } from '@/components/productos/ProductCard.js';
 import { Badge } from '@/components/ui/Badge.js';
 import { Button } from '@/components/ui/Button.js';
@@ -9,6 +10,12 @@ import { Button } from '@/components/ui/Button.js';
 export function Home() {
   const [productosAgregados, setProductosAgregados] = useState(0);
   const destacados = productosDemo.filter((p) => p.destacado);
+
+  usarSeo({
+    titulo: 'Tiendas Montaño',
+    descripcion:
+      'Moda boliviana para mujer, hombre y niños. Compra en línea o reserva sin pagar en la sucursal más cercana de Santa Cruz, La Paz, Cochabamba y Sucre.',
+  });
 
   return (
     <div className="flex flex-col gap-10 pb-4">

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle, CalendarCheck, CheckCircle2, ChevronLeft, Info, PackageMinus, Plus, ShoppingCart, Store, Trash2, X } from 'lucide-react';
 import { api, type OpcionProductoReserva, type OpcionSucursalReserva } from '@/lib/api.js';
+import { monto } from '@/lib/formato.js';
 import { useAuth } from '@/contexts/AuthContext.js';
 import { cn } from '@/lib/utils.js';
 import { Button } from '@/components/ui/Button.js';
@@ -572,7 +573,7 @@ export function NuevaReserva() {
                       {disp > 0 ? `${disp} disp.` : 'Sin stock'}
                     </Badge>
                   </div>
-                  <p className="mb-2 text-xs text-ink-400">Bs. {p.precio_base.toFixed(2)}</p>
+                  <p className="mb-2 text-xs text-ink-400">Bs. {monto(p.precio_base)}</p>
                   <div className="mt-auto">
                     {enCarrito ? (
                       <div className="flex items-center gap-2">
@@ -647,7 +648,7 @@ export function NuevaReserva() {
                         {l.talla} · {l.color} · Cant: {l.cantidad}
                       </p>
                     </div>
-                    <p className="text-xs font-bold text-ink-700">Bs. {(l.precio_base * l.cantidad).toFixed(2)}</p>
+                    <p className="text-xs font-bold text-ink-700">Bs. {monto(l.precio_base * l.cantidad)}</p>
                   </div>
                 ))}
               </div>
@@ -656,7 +657,7 @@ export function NuevaReserva() {
             <div className="border-t border-ink-100 pt-3">
               <div className="mb-1 flex items-center justify-between text-sm">
                 <span className="text-ink-500">Total estimado</span>
-                <span className="font-extrabold text-ink-900">Bs. {totalEstimado.toFixed(2)}</span>
+                <span className="font-extrabold text-ink-900">Bs. {monto(totalEstimado)}</span>
               </div>
               <p className="mb-3 text-[11px] text-ink-400">
                 Este total es referencia. El precio final se confirma en tienda.

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, CalendarCheck, Minus, Plus, Store, X } from 'lucide-react';
 import { api, type OpcionProductoReserva, type OpcionSucursalReserva } from '@/lib/api.js';
+import { monto } from '@/lib/formato.js';
 import { useAuth } from '@/contexts/AuthContext.js';
 import {
   guardarIntencionReserva,
@@ -276,7 +277,7 @@ export function ModalReserva({ abierto, producto, inicial, onCerrar }: Props) {
           <div className="min-w-0">
             <p className="truncate text-base font-extrabold text-ink-900">{producto.nombre}</p>
             <p className="text-xs text-ink-400">
-              {producto.codigo} · Bs. {producto.precio.toFixed(2)}
+              {producto.codigo} · Bs. {monto(producto.precio)}
             </p>
           </div>
           <button
@@ -466,7 +467,7 @@ export function ModalReserva({ abierto, producto, inicial, onCerrar }: Props) {
           <div className="mb-3 flex items-center justify-between text-sm">
             <span className="text-ink-500">Referencia total</span>
             <span className="font-extrabold text-ink-900">
-              Bs. {(producto.precio * cantidad).toFixed(2)}
+              Bs. {monto(producto.precio * cantidad)}
             </span>
           </div>
           <div className="flex gap-2">

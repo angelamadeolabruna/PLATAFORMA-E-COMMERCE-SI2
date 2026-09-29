@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { monto } from '@/lib/formato.js';
+import { usarSeo, datosProducto } from '@/lib/seo.js';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -37,7 +39,7 @@ function Precio({ valor }: { valor: number }) {
   return (
     <div className="flex items-baseline gap-2">
       <span className="text-3xl font-extrabold text-brand-700 tracking-tight">
-        Bs. {valor.toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        Bs. {monto(valor)}
       </span>
       <span className="text-xs font-semibold text-ink-400">IVA incluido</span>
     </div>
@@ -72,6 +74,29 @@ export function Producto() {
   const intencionRestaurada = useRef(false);
   const [vestidorRa, setVestidorRa] = useState<PrendaVestidorRa | null>(null);
   const [vestidorAbierto, setVestidorAbierto] = useState(false);
+
+  // Cada prenda tiene su propio titulo, descripcion y datos estructurados.
+  // Sin esto, todas las fichas comparten el titulo generico del index.html y
+  // el buscador no puede indexarlas por separado ni mostrarles el precio.
+  const prenda = datos?.producto;
+  usarSeo({
+    titulo: prenda ? `${prenda.nombre}` : 'Prenda | Tiendas Montaño',
+    descripcion: prenda
+      ? `${prenda.nombre}${prenda.categoria ? ` de ${prenda.categoria}` : ''}. Precio Bs. ${monto(prenda.precio)}. Compra en línea o reserva para probar en la tienda.`
+      : 'Cargando la ficha de la prenda.',
+    imagen: prenda?.imagen_principal ?? null,
+    producto: prenda
+      ? datosProducto({
+          nombre: prenda.nombre,
+          descripcion: prenda.descripcion,
+          precio: prenda.precio,
+          imagen: prenda.imagen_principal,
+          sku: prenda.codigo,
+          hayExistencias:
+            datos?.sucursales?.some((s) => s.lineas.some((l) => (l.disponible ?? 0) > 0)) ?? null,
+        })
+      : null,
+  });
 
   const cargar = useCallback(async () => {
     if (!codigo) return;
@@ -361,6 +386,7 @@ export function Producto() {
               <img
                 src={imagenActiva}
                 alt={`${datos?.producto.nombre} ${colorSel ? `- Color ${colorSel}` : ''}`}
+                decoding="async"
                 className="h-full w-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105 select-none"
                 onError={() => setImgFallback(true)}
               />
@@ -415,6 +441,7 @@ export function Producto() {
                     <img
                       src={img.url}
                       alt={img.color || 'variante'}
+                      decoding="async"
                       className="h-full w-full object-contain mix-blend-multiply transition-transform group-hover:scale-105"
                     />
                     {img.color && (

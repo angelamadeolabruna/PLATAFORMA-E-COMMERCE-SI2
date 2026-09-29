@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { monto } from '@/lib/formato.js';
+import { usarSeo } from '@/lib/seo.js';
 import {
   AlertTriangle,
   CalendarClock,
@@ -36,7 +38,7 @@ const LIMITE = 20;
 function Precio({ valor }: { valor: number }) {
   return (
     <span className="text-xl font-extrabold text-brand-700">
-      Bs. {valor.toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      Bs. {monto(valor)}
     </span>
   );
 }
@@ -111,6 +113,8 @@ function TarjetaPrenda({
           <img
             src={imagenMostrada}
             alt={item.nombre}
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105 select-none"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = 'none';
@@ -452,6 +456,22 @@ export function Catalogo() {
     'h-11 w-full rounded-xl border border-ink-200 bg-white px-3.5 text-sm text-ink-900 outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15';
 
   const sinResultados = !cargando && !errorFiltro && !error && total === 0;
+
+  // El titulo lleva el numero de prendas que hay, para que el buscador
+  // distinga una pagina de resultado vacio de una de verdad con contenido.
+  const descripcionCatalogo = hayFiltrosActivos
+    ? 'Resultados filtrados por categoría, talla, color, temporada y precio. Consulta la disponibilidad en cada sucursal.'
+    : 'Filtra por categoría, talla, color, temporada y precio. Consulta la disponibilidad en cada sucursal, compra en línea o reserva para probar.';
+
+  usarSeo({
+    titulo:
+      categoria || busqueda.trim()
+        ? `Catálogo${categoria ? `: ${categoria}` : ''}`
+        : total > 0
+          ? `Catálogo: ${total} prendas`
+          : 'Catálogo de prendas',
+    descripcion: descripcionCatalogo,
+  });
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">

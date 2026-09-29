@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { Navigate } from 'react-router-dom';
 import { AlertCircle, CheckCircle, Layers, Plus, ShieldCheck, Shirt, X } from 'lucide-react';
 import { api, type ProductoItem, type SelectoresProducto } from '@/lib/api.js';
+import { monto } from '@/lib/formato.js';
 import { useAuth } from '@/contexts/AuthContext.js';
 import { Button } from '@/components/ui/Button.js';
 import { Input } from '@/components/ui/Input.js';
@@ -273,7 +274,7 @@ function ModalNuevoProducto({
 
           {precioValido && ivaValido && (
             <p className="text-xs text-ink-500">
-              Precio final al cliente: <span className="font-semibold text-ink-700">Bs. {((precioNumero * (1 + ivaNumero / 100))).toFixed(2)}</span> (incluye IVA)
+              Precio final al cliente: <span className="font-semibold text-ink-700">Bs. {monto(precioNumero * (1 + ivaNumero / 100))}</span> (incluye IVA)
             </p>
           )}
 
@@ -435,10 +436,10 @@ export function AdminCatalogoProductos() {
                   <td className="px-4 py-3 text-ink-600">{p.combinaciones}</td>
                   <td className="px-4 py-3">
                     <div className="font-semibold text-ink-800">
-                      Bs. {precioFinal(p).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      Bs. {monto(precioFinal(p))}
                     </div>
                     <div className="text-xs text-ink-400">
-                      base Bs. {p.precio_base.toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} + {p.porcentaje_iva}% IVA
+                      base Bs. {monto(p.precio_base)} + {p.porcentaje_iva}% IVA
                     </div>
                   </td>
                   <td className="px-4 py-3">

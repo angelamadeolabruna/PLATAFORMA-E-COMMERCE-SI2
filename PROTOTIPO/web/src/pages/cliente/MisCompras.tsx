@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertCircle, Download, FileDown, PackageX, Printer, RefreshCw, X } from 'lucide-react';
 import { api, type CompraListaItem } from '@/lib/api.js';
+import { fechaHora, monto } from '@/lib/formato.js';
 import { Badge } from '@/components/ui/Badge.js';
 import { Button } from '@/components/ui/Button.js';
 import { Card } from '@/components/ui/Card.js';
@@ -164,13 +165,13 @@ export function MisCompras() {
                     )}
                   </div>
                   <p className="mt-1 text-sm text-ink-500">
-                    {new Date(c.fecha_venta).toLocaleString('es-BO')} · {c.modalidad} ·{' '}
+                    {fechaHora(c.fecha_venta)} · {c.modalidad} ·{' '}
                     {c.metodo_pago ?? '-'}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-extrabold tabular-nums text-ink-900">
-                    Bs {c.total.toFixed(2)}
+                    Bs {monto(c.total)}
                   </span>
                   {c.estado === 'Completada' && c.id_comprobante ? (
                     <>
