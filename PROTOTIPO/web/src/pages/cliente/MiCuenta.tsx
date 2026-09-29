@@ -13,6 +13,7 @@ import {
   Package,
   ReceiptText,
   RefreshCw,
+  ScanLine,
   Sparkles,
   User as UserIcon,
 } from 'lucide-react';
@@ -24,12 +25,18 @@ import { fecha, fechaHora, desdeHace, entero, monto, precio, tonoReserva } from 
 import { cn } from '@/lib/utils.js';
 import { Button } from '@/components/ui/Button.js';
 
-type Pestana = 'resumen' | 'pedidos' | 'reservas' | 'datos';
+type Pestana = 'resumen' | 'pedidos' | 'reservas' | 'recomendaciones' | 'vestidor' | 'datos';
 
+// Aqui esta todo lo que tiene el cliente, sin menus desplegables. Antes
+// estas cuatro cosas vivian en una lista que se abria con una flechita en la
+// barra, y el cliente no tenia forma de saber que estaban ahi. Ahora la
+// pagina se entra desde un enlace con su nombre, y todo esta en pestanas.
 const PESTANAS: Array<{ id: Pestana; etiqueta: string; icono: typeof Package }> = [
   { id: 'resumen', etiqueta: 'Resumen', icono: UserIcon },
   { id: 'pedidos', etiqueta: 'Mis pedidos', icono: ReceiptText },
   { id: 'reservas', etiqueta: 'Mis reservas', icono: CalendarCheck },
+  { id: 'recomendaciones', etiqueta: 'Recomendaciones', icono: Sparkles },
+  { id: 'vestidor', etiqueta: 'Mis pruebas RA', icono: ScanLine },
   { id: 'datos', etiqueta: 'Mis datos', icono: UserIcon },
 ];
 
@@ -452,6 +459,51 @@ export function MiCuenta() {
                 Puedes cancelar una reserva desde su detalle mientras la tienda no la haya
                 preparado. Una vez preparada, acércate al local con tu número de reserva.
               </p>
+            </section>
+          )}
+
+          {pestana === 'recomendaciones' && (
+            <section className="space-y-4">
+              <div className="rounded-2xl border border-ink-800 bg-white p-5">
+                <h2 className="text-sm font-semibold text-ink-900">Recomendaciones para ti</h2>
+                <p className="mt-1 text-sm text-ink-600">
+                  El sistema mira lo que has mirado y lo que compraste para sugerirte prendas parecidas.
+                </p>
+                <Link to="/recomendaciones">
+                  <Button className="mt-4">
+                    <Sparkles size={16} /> Ver mis recomendaciones
+                  </Button>
+                </Link>
+              </div>
+              <div className="rounded-2xl border border-dashed border-brand-200 bg-brand-50/60 p-5">
+                <p className="text-sm text-ink-600">
+                  Mientras compras y miras prendas, las recomendaciones se van ajustando solas. Cuanto
+                  más veas, mejor te=Mayús.
+                </p>
+              </div>
+            </section>
+          )}
+
+          {pestana === 'vestidor' && (
+            <section className="space-y-4">
+              <div className="rounded-2xl border border-ink-800 bg-white p-5">
+                <h2 className="text-sm font-semibold text-ink-900">Mis pruebas con realidad aumentada</h2>
+                <p className="mt-1 text-sm text-ink-600">
+                  Aquí quedan las prendas que te probaste con el vestidor virtual, con la foto que
+                  se te generó en cada prueba.
+                </p>
+                <Link to="/reservas/pruebas-ra">
+                  <Button className="mt-4">
+                    <ScanLine size={16} /> Ver mi historial de pruebas
+                  </Button>
+                </Link>
+              </div>
+              <div className="rounded-2xl border border-dashed border-brand-200 bg-brand-50/60 p-5">
+                <p className="text-sm text-ink-600">
+                  Cada prueba genera una foto con la prenda puesta. Sirve para decidir sin miedo, y
+                  no cuesta nada: no se cobra ni se reserva.
+                </p>
+              </div>
             </section>
           )}
 

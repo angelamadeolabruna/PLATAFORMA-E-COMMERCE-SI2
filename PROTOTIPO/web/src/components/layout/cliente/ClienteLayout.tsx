@@ -1,140 +1,97 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { ChevronDown, LogOut, Menu, Package, Search, ShoppingCart, User, X } from 'lucide-react';
+import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { LogOut, Menu, Package, Search, ShoppingCart, User, X } from 'lucide-react';
 import { cn } from '@/lib/utils.js';
 import { useAuth } from '@/contexts/AuthContext.js';
 import { useCart } from '@/contexts/CartContext.js';
-import { PAQUETES_CLIENTE, type ItemMenuCliente } from '@/data/clienteMenu.js';
 import { CuentaClienteProvider, useCuentaCliente } from '@/contexts/CuentaClienteContext.js';
 import { fecha } from '@/lib/formato.js';
 import logoUrl from '@/assets/logo.png';
 
-type UsuarioMenu = { permisos?: unknown[]; nombre?: string | null; email?: string | null; rol?: string | null } | null;
+type UsuarioMenu = {
+  permisos?: unknown[];
+  nombre?: string | null;
+  email?: string | null;
+  rol?: string | null;
+} | null;
 
-function MenuCuenta({ usuario, logout }: { usuario: UsuarioMenu; logout: () => void }) {
-  const [abierto, setAbierto] = useState(false);
+/**
+ * Acceso a la cuenta del cliente, en la barra superior.
+ *
+ * Antes era un desplegable: un boton con una flechita que abria una lista.
+ * El problema es que el cliente no sabe que hay un menu ahi, y si busca sus
+ * reservas no se le ocurre pulsarlo. Un desplegable solo lo encuentra quien ya
+ * sabe que existe, que es justo quien no lo necesita.
+ *
+ * Ahora es un enlace con texto, que es la forma en que la gente busca: si
+ * pone el raton encima de algo que pone "Mi cuenta", entiende que ahi estan
+ * sus cosas. Sin flechita, porque no hay nada que desplegar.
+ *
+ * Solo aparece con la sesion iniciada. Para un visitante que no ha entrado no
+ * tiene sentido, y por eso su sitio lo ocupa el boton de "Ingresar".
+ */
+function AccesoCuenta({ usuario }: { usuario: UsuarioMenu }) {
   const { pendientes } = useCuentaCliente();
+  const inicial = (usuario?.nombre ?? usuario?.email ?? 'U').charAt(0).toUpperCase();
 
-  const permisos = (usuario?.permisos ?? []) as string[];
-  const permitido = (item: ItemMenuCliente) =>
-    permisos.includes('*') || (item.permiso ? permisos.includes(item.permiso) : true);
-
-  const paquetesVisibles = PAQUETES_CLIENTE.filter((paquete) => paquete.items.some(permitido));
-
-  // El desplegable es un atajo, no el sitio donde vive la informacion. Por
-  // eso lo primero que ofrece es "Mi cuenta", que es donde esta todo, y
-  // despues los accesos sueltos que mas se usan. Repetir aqui el historial
-  // entero de pedidos y reservas duplicaria la pagina sin aportar nada.
   return (
-    <div className="relative">
-      <button
-        type="button"
-        className="relative flex items-center gap-2 rounded-xl p-2.5 text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-900"
-        onClick={() => setAbierto((v) => !v)}
-        aria-label="Mi cuenta"
-        aria-expanded={abierto}
-      >
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700">
-          {(usuario?.nombre ?? usuario?.email ?? 'U').charAt(0).toUpperCase()}
+    <Link
+      to="/mi-cuenta"
+      className="relative flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-left transition-colors hover:bg-ink-50 sm:px-3"
+      aria-label="Mi cuenta"
+    >
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-700">
+        {inicial}
+      </span>
+      <span className="hidden min-w-0 lg:block">
+        {/* El nombre arriba y "Mi cuenta" debajo. Al reves no se entiende que
+            el boton lleva a otra pagina. */}
+        <span className="block max-w-32 truncate text-sm font-semibold leading-tight text-ink-900">
+          {usuario?.nombre ?? usuario?.email ?? 'Mi cuenta'}
         </span>
-        <span className="hidden lg:block text-sm font-semibold text-ink-800 truncate max-w-36">
-          {usuario?.nombre ?? usuario?.email ?? 'Mi Cuenta'}
+        <span className="block text-[11px] leading-tight text-ink-400">Mi cuenta</span>
+      </span>
+      {/* Distintivo discreto con las reservas sin resolver. */}
+      {pendientes > 0 && (
+        <span className="absolute top-0 right-0 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-warning-500 px-1 text-[11px] leading-none font-bold text-ink-950 sm:right-1">
+          {pendientes}
         </span>
-        {/* Distintivo discreto: avisa sin gritar. La franja ambar de la pagina
-            de cuenta es la que reclama atencion si algo ya esta listo. */}
-        {pendientes > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-warning-500 px-1 text-[11px] leading-none font-bold text-ink-950">
-            {pendientes}
-          </span>
-        )}
-        <ChevronDown size={16} className={cn('text-ink-500 transition-transform', abierto && 'rotate-180')} />
-      </button>
-
-      {abierto && (
-        <div className="absolute right-0 mt-2 w-64 origin-top-right animate-in fade-in-0 zoom-in-95">
-          <div className="rounded-xl border border-ink-100 bg-white py-1.5 shadow-pop ring-1 ring-ink-100">
-            <Link
-              to="/mi-cuenta"
-              onClick={() => setAbierto(false)}
-              className="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-ink-900 transition hover:bg-ink-50"
-            >
-              <User size={18} className="text-ink-400" />
-              <span className="flex-1">Mi cuenta</span>
-              {pendientes > 0 && (
-                <span className="rounded-full bg-warning-500 px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none text-ink-950">
-                  {pendientes}
-                </span>
-              )}
-            </Link>
-
-            <p className="px-3 pb-1 pt-2.5 text-[11px] font-bold uppercase tracking-wider text-ink-400">
-              Ir directo a
-            </p>
-            <ul className="flex flex-col gap-0.5">
-              {paquetesVisibles
-                .flatMap((paquete) => paquete.items)
-                .filter(permitido)
-                .map((item) => (
-                  <li key={item.ruta}>
-                    <NavLink
-                      to={item.ruta}
-                      onClick={() => setAbierto(false)}
-                      className="flex items-center gap-3 px-3 py-2 text-sm text-ink-600 transition hover:bg-ink-50 hover:text-ink-900"
-                    >
-                      <span className="shrink-0">
-                        <item.icono size={17} className="text-ink-400" />
-                      </span>
-                      <span className="flex-1 leading-tight">{item.etiqueta}</span>
-                      <span className="rounded-md bg-ink-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink-500">
-                        {item.cu}
-                      </span>
-                    </NavLink>
-                  </li>
-                ))}
-            </ul>
-
-            <hr className="my-1.5 border-ink-100" />
-            <div className="px-3 py-1">
-              <p className="text-xs text-ink-500 truncate max-w-full">
-                {usuario?.nombre ?? usuario?.email}
-              </p>
-              <p className="text-[11px] text-ink-400 capitalize">{usuario?.rol ?? 'Cliente'}</p>
-            </div>
-            <button
-              onClick={() => void logout()}
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-medium text-danger-600 hover:bg-danger-50 transition-colors"
-            >
-              <LogOut size={18} />
-              Cerrar sesión
-            </button>
-          </div>
-        </div>
       )}
-    </div>
+    </Link>
   );
 }
 
-// Franja ambar bajo la barra. Es la parte que de verdad "se nota", porque
-// ocupa el ancho de la pantalla y no se puede pasar por alto.
-//
-// Cubre las dos situaciones en las que el cliente tiene algo pendiente, y el
-// texto cambia segun cual sea:
-//
-//   1. Hay una prenda ya preparada. Es lo urgente: la tienda la guardo y el
-//      cliente tiene que pasar a recogerla. Se dice cuando y donde.
-//   2. No hay ninguna, pero si hay reservas solicitadas. Aqui la tienda aun
-//      no ha confirmado. Se avisa igualmente, porque una reserva que nadie
-//      toca es justo lo que el cliente debe notar.
-//
-// Va en ambar y no en rojo: el rojo es para errores, y aqui no hay nada
-// roto, solo algo que resolver. Es un aviso, no una alarma.
+/** Boton de ingresar, para el visitante que todavia no tiene sesion. */
+function BotonIngresar() {
+  return (
+    <Link
+      to="/login"
+      className="flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:bg-ink-50"
+    >
+      <User size={19} />
+      <span className="hidden sm:inline">Ingresar</span>
+    </Link>
+  );
+}
+
+/**
+ * Franja ambar bajo la barra. Solo aparece cuando hay una prenda ya
+ * preparada para recoger, que es lo unico que el cliente no puede resolver
+ * por su cuenta, o cuando hay reservas que la tienda aun no ha confirmado.
+ *
+ * Va en ambar y no en rojo: el rojo es para errores, y aqui no hay nada
+ * roto, solo algo que resolver. Es un aviso, no una alarma.
+ */
 function FranjaReservas() {
   const { listasParaRecoger, esperandoConfirmacion } = useCuentaCliente();
 
   if (listasParaRecoger.length === 0 && esperandoConfirmacion.length === 0) return null;
 
   let texto: ReactNode;
+  let urgente = false;
+
   if (listasParaRecoger.length > 0) {
+    urgente = true;
     const n = listasParaRecoger.length;
     const primera = listasParaRecoger[0];
     texto = (
@@ -152,9 +109,7 @@ function FranjaReservas() {
     texto = (
       <>
         <span className="font-semibold">
-          {n === 1
-            ? 'Tienes 1 reserva esperando'
-            : `Tienes ${n} reservas esperando`}
+          {n === 1 ? 'Tienes 1 reserva esperando' : `Tienes ${n} reservas esperando`}
         </span>{' '}
         que la tienda confirme. Te avisamos en cuanto estén listas.
       </>
@@ -165,22 +120,18 @@ function FranjaReservas() {
     <div
       className={cn(
         'border-b',
-        listasParaRecoger.length > 0
-          ? 'border-warning-500/40 bg-warning-50'
-          : 'border-ink-200 bg-ink-100',
+        urgente ? 'border-warning-500/40 bg-warning-50' : 'border-ink-200 bg-ink-100',
       )}
     >
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 py-2">
         <Package
           size={16}
-          className={cn('shrink-0', listasParaRecoger.length > 0 ? 'text-warning-500' : 'text-ink-400')}
+          className={cn('shrink-0', urgente ? 'text-warning-500' : 'text-ink-400')}
         />
-        {/* Cuando solo hay reservas por confirmar el texto va en gris, no en
-            ambar: es informativo, no algo que exija una accion ya. */}
         <p
           className={cn(
             'flex-1 text-sm',
-            listasParaRecoger.length > 0 ? 'text-warning-500' : 'text-ink-600',
+            urgente ? 'text-warning-500' : 'text-ink-600',
           )}
         >
           {texto}
@@ -189,7 +140,7 @@ function FranjaReservas() {
           to="/mi-cuenta?tab=reservas"
           className={cn(
             'text-sm font-semibold underline underline-offset-2 hover:opacity-80',
-            listasParaRecoger.length > 0 ? 'text-warning-500' : 'text-ink-600',
+            urgente ? 'text-warning-500' : 'text-ink-600',
           )}
         >
           Ver detalle
@@ -199,95 +150,6 @@ function FranjaReservas() {
   );
 }
 
-function MenuMovil({ usuario, logout }: { usuario: UsuarioMenu; logout: () => void }) {
-  const [abierto, setAbierto] = useState(false);
-  const { pendientes } = useCuentaCliente();
-
-  const permisos = (usuario?.permisos ?? []) as string[];
-  const permitido = (item: ItemMenuCliente) =>
-    permisos.includes('*') || (item.permiso ? permisos.includes(item.permiso) : true);
-  const paquetesVisibles = PAQUETES_CLIENTE.filter((paquete) => paquete.items.some(permitido));
-
-  return (
-    <div className="lg:hidden">
-      <button
-        className="relative rounded-xl p-2.5 text-ink-600 hover:bg-ink-50"
-        onClick={() => setAbierto((v) => !v)}
-        aria-label="Abrir menú de cuenta"
-      >
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700">
-          {(usuario?.nombre ?? usuario?.email ?? 'U').charAt(0).toUpperCase()}
-        </span>
-        {pendientes > 0 && (
-          <span className="absolute top-1.5 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-warning-500 px-1 text-[10px] leading-none font-bold text-ink-950">
-            {pendientes}
-          </span>
-        )}
-      </button>
-      {abierto && (
-        <div className="absolute right-0 top-full mt-2 w-64 origin-top-right animate-in fade-in-0 zoom-in-95 lg:static lg:visible lg:w-auto lg:shadow-none lg:bg-transparent lg:ring-0">
-          <div className="rounded-xl border border-ink-100 bg-white py-1.5 shadow-pop ring-1 ring-ink-100">
-            <Link
-              to="/mi-cuenta"
-              onClick={() => setAbierto(false)}
-              className="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-ink-900 transition hover:bg-ink-50"
-            >
-              <User size={18} className="text-ink-400" />
-              <span className="flex-1">Mi cuenta</span>
-              {pendientes > 0 && (
-                <span className="rounded-full bg-warning-500 px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none text-ink-950">
-                  {pendientes}
-                </span>
-              )}
-            </Link>
-            <p className="px-3 pb-1 pt-2.5 text-[11px] font-bold uppercase tracking-wider text-ink-400">
-              Ir directo a
-            </p>
-            <ul className="flex flex-col gap-0.5">
-              {paquetesVisibles
-                .flatMap((paquete) => paquete.items)
-                .filter(permitido)
-                .map((item) => (
-                  <li key={item.ruta}>
-                    <NavLink
-                      to={item.ruta}
-                      onClick={() => setAbierto(false)}
-                      className="flex items-center gap-3 px-3 py-2 text-sm text-ink-600 transition hover:bg-ink-50 hover:text-ink-900"
-                    >
-                      <span className="shrink-0">
-                        <item.icono size={17} className="text-ink-400" />
-                      </span>
-                      <span className="flex-1 leading-tight">{item.etiqueta}</span>
-                      <span className="rounded-md bg-ink-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink-500">
-                        {item.cu}
-                      </span>
-                    </NavLink>
-                  </li>
-                ))}
-            </ul>
-            <hr className="my-1.5 border-ink-100" />
-            <div className="px-3 py-1">
-              <p className="text-xs text-ink-500 truncate max-w-full">
-                {usuario?.nombre ?? usuario?.email}
-              </p>
-              <p className="text-[11px] text-ink-400 capitalize">{usuario?.rol ?? 'Cliente'}</p>
-            </div>
-            <button
-              onClick={() => void logout()}
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-medium text-danger-600 hover:bg-danger-50 transition-colors"
-            >
-              <LogOut size={18} />
-              Cerrar sesión
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-// El layout envuelve a la pagina con el provider para que el numero del
-// distintivo y el contenido de /mi-cuenta vengan de la misma carga y nunca
-// se contradigan entre si.
 export function ClienteLayout() {
   return (
     <CuentaClienteProvider>
@@ -297,9 +159,10 @@ export function ClienteLayout() {
 }
 
 function ContenidoClienteLayout(): ReactNode {
-  const { usuario, logout } = useAuth();
+  const { token, usuario, logout } = useAuth();
   const { totalCantidad, abrirPanel } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
   const [busqueda, setBusqueda] = useState('');
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [sugerencias, setSugerencias] = useState<string[]>([]);
@@ -310,6 +173,15 @@ function ContenidoClienteLayout(): ReactNode {
     e.preventDefault();
     const q = busqueda.trim();
     navigate(q ? `/productos?q=${encodeURIComponent(q)}` : '/productos');
+  }
+
+  /* Si no hay sesion y se pide la cuenta, se manda al login y se apunta donde
+     queria ir, para que al entrar caiga ahi. Sin esto, escribir /mi-cuenta en
+     la barra de direcciones mostraba una pagina vacia de una cuenta que no
+     existe. */
+  const esCuenta = location.pathname === '/mi-cuenta';
+  if (!token && esCuenta) {
+    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   }
 
   return (
@@ -366,21 +238,11 @@ function ContenidoClienteLayout(): ReactNode {
             )}
           </div>
 
-          <nav className="ml-auto flex items-center gap-1.5">
-            {usuario ? (
-              <>
-                <MenuCuenta usuario={usuario} logout={logout} />
-                <MenuMovil usuario={usuario} logout={logout} />
-              </>
-            ) : (
-              <Link
-                to="/login"
-                className="ml-1 hidden items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:bg-ink-50 sm:flex"
-              >
-                <User size={19} />
-                Ingresar
-              </Link>
-            )}
+          {/* Aqui esta toda la diferencia con la version anterior: con sesion
+              aparece el acceso a la cuenta, y sin sesion el de ingresar. Uno
+              u otro, nunca los dos. */}
+          <nav className="ml-auto flex items-center gap-1">
+            {usuario ? <AccesoCuenta usuario={usuario} /> : <BotonIngresar />}
 
             <button
               type="button"
@@ -403,6 +265,25 @@ function ContenidoClienteLayout(): ReactNode {
             </button>
           </nav>
         </div>
+
+        {/* Cerrar sesion baja a la barra, porque es una accion poco frecuente
+            y no debe competir con la compra. */}
+        {usuario && (
+          <div className="border-t border-ink-100 bg-ink-50/60">
+            <div className="mx-auto flex max-w-7xl items-center justify-end gap-2 px-4 py-1.5">
+              <span className="text-[11px] text-ink-400">
+                Sesión de {usuario.nombre ?? usuario.email}
+              </span>
+              <button
+                type="button"
+                onClick={() => void logout()}
+                className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold text-ink-500 transition hover:bg-ink-100 hover:text-danger-600"
+              >
+                <LogOut size={12} /> Cerrar sesión
+              </button>
+            </div>
+          </div>
+        )}
 
         {menuAbierto && (
           <div className="border-t border-ink-100 bg-white p-4 lg:hidden">
