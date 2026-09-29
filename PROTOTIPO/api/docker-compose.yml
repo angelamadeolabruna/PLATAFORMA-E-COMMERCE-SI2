@@ -1,0 +1,100 @@
+# Levanta solo el backend (API + base de datos + pgAdmin), sin la web.
+# Se ejecuta desde esta carpeta:
+#   docker compose up --build
+#
+#   API     -> http://localhost:3000/api/v1/health
+#   DB      -> localhost:5432  (postgres / postgres, base tiendas_montano)
+#   pgAdmin -> http://localhost:5050  (admin@tiendasmontano.bo / admin)
+#
+# Los scripts de la base se toman de "BASE DE DATOS" y de docker/ en la
+# raiz del repo, los mismos que usa el docker-compose.yml de la raiz.
+# Usa los mismos puertos que ese, asi que no pueden estar levantados a la
+# vez (o cambia los puertos con un .env en esta carpeta).
+# Para empezar la base de cero: docker compose down -v
+
+name: tiendas-montano-api
+
+services:
+  db:
+    # Version 15 a proposito: coincide con el pg_dump de la imagen de la API.
+    image: postgres:15-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tiendas_montano
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      TZ: America/La_Paz
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      # Se ejecutan en orden alfabetico, solo con el volumen vacio
+      - "../../BASE DE DATOS/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro"
+      - "../../BASE DE DATOS/poblacion_datos.sql:/seed/poblacion_datos.sql:ro"
+      - "../../docker/db/02_poblacion_datos.sh:/docker-entrypoint-initdb.d/02_poblacion_datos.sh:ro"
+      - "../../BASE DE DATOS/seed_imagenes_productos.sql:/docker-entrypoint-initdb.d/03_seed_imagenes_productos.sql:ro"
+      - "../../docker/db/90_docker_local.sql:/docker-entrypoint-initdb.d/90_docker_local.sql:ro"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tiendas_montano"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 8080
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-postgres}@db:5432/tiendas_montano
+      DB_SSL: "false"
+      JWT_SECRET: ${JWT_SECRET:-clave-local-de-docker-cambiar-en-produccion}
+      JWT_ACCESS_TOKEN_MINUTES: 15
+      JWT_REFRESH_TOKEN_DAYS: 7
+      JWT_ALGORITHM: HS256
+      COOKIE_SECURE: "false"
+      # La web corriendo aparte con "npm run dev"
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      EMAIL_ENABLED: "false"
+      EMAIL_FROM: no-reply@tiendasmontano.com
+      EMAIL_BASE_URL: http://localhost:5173
+      STORAGE_BACKEND: local
+      STORAGE_COMPROBANTES: /data/comprobantes
+      RESPALDOS_DIR: /data/respaldos
+      STORAGE_PATH: /data/reportes
+      RESPALDOS_PG_DUMP_PATH: pg_dump
+      TZ: America/La_Paz
+    ports:
+      - "${API_PORT:-3000}:8080"
+    volumes:
+      - api-data:/data
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@tiendasmontano.bo}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "True"
+      # No pide la contrasena maestra para guardar credenciales
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      # Deja la conexion a "db" registrada en el primer arranque
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+    entrypoint: ["/bin/sh", "/pgadmin-entrypoint.sh"]
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - "../../docker/pgadmin/servers.json:/pgadmin4/servers.json:ro"
+      - "../../docker/pgadmin/entrypoint.sh:/pgadmin-entrypoint.sh:ro"
+
+volumes:
+  db-data:
+  api-data:
+  pgadmin-data:
