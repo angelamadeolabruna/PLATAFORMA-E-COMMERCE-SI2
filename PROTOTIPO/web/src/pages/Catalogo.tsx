@@ -5,6 +5,7 @@ import { usarSeo } from '@/lib/seo.js';
 import {
   AlertTriangle,
   CalendarClock,
+  Check,
   ChevronRight,
   FilterX,
   Loader2,
@@ -82,6 +83,7 @@ function TarjetaPrenda({
   const [colorHover, setColorHover] = useState<string | null>(null);
   const [agregando, setAgregando] = useState(false);
   const [errorAgregar, setErrorAgregar] = useState<string | null>(null);
+  const [agregado, setAgregado] = useState(false);
   const { usuario } = useAuth();
   const { agregar } = useCart();
 
@@ -117,6 +119,11 @@ function TarjetaPrenda({
         cantidad: 1,
         id_sucursal: sucursal.id_sucursal,
       });
+      // Se avisa de que la prenda ya esta en el carrito. Antes el boton
+      // pulsaba, aparecia el numero en el icono del carrito y no se decia
+      // nada mas, con lo que parecia que no habia pasado nada.
+      setAgregado(true);
+      setTimeout(() => setAgregado(false), 2200);
     } catch (err) {
       const msg =
         err instanceof ApiError && err.status === 401
@@ -238,12 +245,20 @@ function TarjetaPrenda({
             <>
               <Button
                 size="sm"
-                variant="accent"
+                variant={agregado ? 'secondary' : 'accent'}
                 loading={agregando}
                 className="w-full font-bold shadow-xs"
                 onClick={() => void agregarAlCarrito()}
               >
-                <ShoppingCart size={15} /> Agregar al carrito
+                {agregado ? (
+                  <>
+                    <Check size={15} /> En el carrito
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart size={15} /> Agregar al carrito
+                  </>
+                )}
               </Button>
               {errorAgregar && (
                 <p className="text-center text-[11px] font-medium text-danger-600">{errorAgregar}</p>
